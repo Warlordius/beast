@@ -1,9 +1,6 @@
 package beast.crawler;
 
 import java.util.*;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 
 import beast.Model;
 import beast.indexNew.BeastIndex;
@@ -18,12 +15,10 @@ public class Crawler {
 	public final boolean ANNOUNCE = true;
 	public final double DECAY = 0.8;
 	public final double DESIRE_REDUCTION = 0.000;
-	public final long DELAY = 0;
+	public final long DELAY = 5000;
 
 	protected ArrayList<Bee> bees;
 	protected BeastIndex index;
-
-	private File output = new File("output.txt");
 
 	public Crawler(BeastIndex index) {
 
@@ -66,52 +61,20 @@ public class Crawler {
 
 		if (ANNOUNCE) System.out.println("Crawling...");
 
-		// Date start = new Date();
-
 		// crawl body
-		try {
-			FileWriter writer = new FileWriter(output);
+		for (int i = 0; i < iterations; i++) {
 
-			for (int i = 0; i < iterations; i++) {
+			if (ANNOUNCE) System.out.println(iterationStats(i));
 
-				if (ANNOUNCE) System.out.println(iterationStats(i));
+			for (int j = 0; j < bees.size(); j++)
+				bees.get(j).doIteration();
 
-				for (int j = 0; j < bees.size(); j++)
-					bees.get(j).doIteration();
-
-				// System.out.println("finished: " + i);
-				// System.out.println("pages: " + index.pages.size());
-				// Date now = new Date();
-				// if (((i % 3) == 0) && (i < 200)){
-				// // testing results
-				// if ((now.getTime() - start.getTime()) > 1000) {
-				// writer.append(""+this.getAvgQuality()+System.getProperty("line.separator"));
-				// start = now;
-				// }
-
-				try {
-					Thread.sleep(DELAY);
-				} catch (InterruptedException e) {
-					System.out.println("Unexpected interruption of crawler system");
-				}
+			try {
+				Thread.sleep(DELAY);
+			} catch (InterruptedException e) {
+				System.out.println("Unexpected interruption of crawler system");
 			}
-			writer.close();
-		} catch (IOException e) {
-			System.out.println("Exception of whole crawler system" + e);
 		}
-
-		// // final report
-		// System.out.println("final pages: " + index.pages.size());
-		// for (int k = 0; k < index.pages.size(); k++) {
-		// if (index.pages.get(k).processed) {
-		// //System.out.println(beesAtSource(index.pages.get(k)) + " - " +
-		// index.pages.get(k).links.size() + " " + index.pages.get(k).quality +
-		// " + " + index.pages.get(k).timestamp + " + " +
-		// index.pages.get(k).url.toString());
-		// System.out.println(beesAtSource(index.pages.get(k)) + " " +
-		// index.pages.get(k).quality);
-		// }
-		// }
 	}
 
 	Bee getBee(int num) {

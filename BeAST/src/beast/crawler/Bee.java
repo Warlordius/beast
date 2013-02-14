@@ -6,7 +6,7 @@ import beast.page.Page;
 
 public abstract class Bee extends Thread {
 
-	public static final boolean ANNOUNCE = true;
+	public static final boolean ANNOUNCE = false;
 	public static final int FORAGING = 0;
 	public static final int OBSERVING = 1;
 	public static final int DANCING = 2;

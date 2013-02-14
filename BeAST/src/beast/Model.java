@@ -15,9 +15,10 @@ public class Model {
 
 	public static final boolean logging = true;
 	public static final boolean useSemantics = true;
-	public static final String DEFAULT_INIT_FILE = "startPages.txt";
-	public static final String DEFAULT_LOG_FILE = "log.txt";
-	public static final String DEFAULT_DB_FILE = "graph";
+	public static final String RESOURCE_DIR = "C:\\_beast_data\\";
+	public static final String DEFAULT_INIT_FILE = RESOURCE_DIR + "startPages.txt";
+	public static final String DEFAULT_LOG_FILE = RESOURCE_DIR + "log.txt";
+	public static final String DEFAULT_DB_FILE = RESOURCE_DIR + "graph";
 	
 	public static final BeastIndex index = new BeastIndex();
 	public static final Crawler crawler = new Crawler(index);
@@ -37,7 +38,7 @@ public class Model {
 //	semEngine.getSynonyms("");
 //	System.out.println(semEngine.getRootNoun("rebels"));
 		
-	runHarvestToday(50, 501);
+	runHarvestToday(50, 10000);
 	
 //	System.out.println(semEngine.getSynonyms("rebels"));
 //	System.out.println("-----");
@@ -61,7 +62,7 @@ public class Model {
 
 	public static void runHarvestToday(int bees, int iters) {
 	
-	final String experimentLocation = "C:/_experiment_data/";
+	final String experimentLocation = RESOURCE_DIR + "_experiment_data/";
 	
 	Calendar today = Calendar.getInstance();
 	String semIndicator;
@@ -71,8 +72,11 @@ public class Model {
 	else
 		semIndicator = "n";
 	
-	String folder = String.format("%04d-%02d-%02d_%d_%d_%s",today.get(Calendar.YEAR), today.get(Calendar.MONTH) + 1, today.get(Calendar.DAY_OF_MONTH), bees, iters, semIndicator);
+	int year = today.get(Calendar.YEAR);
+	int month = today.get(Calendar.MONTH) + 1;
+	int day = today.get(Calendar.DAY_OF_MONTH);
 	
+	String folder = String.format("%04d-%02d-%02d_%d_%d_%s", year, month, day, bees, iters, semIndicator);	
 	String path = experimentLocation + folder;
 	
 	runHarvest(bees, iters, path);

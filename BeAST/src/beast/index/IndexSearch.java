@@ -14,10 +14,12 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
+import beast.Model;
+
 public class IndexSearch{
 
-	public static final String INDEX_DIRECTORY = "index";
-	public static final String FILE_DIRECTORY = "pages";
+	public static final String INDEX_DIRECTORY = Model.RESOURCE_DIR + "index";
+	public static final String FILE_DIRECTORY = Model.RESOURCE_DIR + "pages";
 	public static final Version VERSION = Version.LUCENE_31;
 	
 	public static final String FIELD_PATH = "path";

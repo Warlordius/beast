@@ -11,8 +11,8 @@ import beast.parser.Parser;
 
 public abstract class Page {
 
-	public static final String RAW_PAGE_DIR = "rawpages";
-	public static final String PAGE_DIR = "pages";
+	public static final String RAW_PAGE_DIR = Model.RESOURCE_DIR + "rawpages";
+	public static final String PAGE_DIR = Model.RESOURCE_DIR + "pages";
 	public static final boolean REPROCESS = true;
 	public static final boolean FORCE_RETRIEVAL = true;
 

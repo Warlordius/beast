@@ -28,7 +28,7 @@ import beast.parser.ParserReuters;
 public class BeastIndex {
 
 	// Settings
-	private static final String DB_PATH = "graph";
+	private static final String DB_PATH = Model.RESOURCE_DIR + "graph";
 	private static final String PAGE_KEY = "url"; // should be url
 	private static final String PAGE_PATH = "path";
 	private static final String PAGE_TITLE = "title";

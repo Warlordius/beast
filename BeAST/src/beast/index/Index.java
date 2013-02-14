@@ -18,12 +18,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
+import beast.Model;
 import beast.page.Page;
 
 
 public class Index{
-	public static final String FILE_DIRECTORY = "pages";
-	public static final String INDEX_DIRECTORY = "index";
+	public static final String FILE_DIRECTORY = Model.RESOURCE_DIR + "pages";
+	public static final String INDEX_DIRECTORY = Model.RESOURCE_DIR + "index";
 	
 	public LinkedList<Page> pages;
 	

@@ -67,22 +67,13 @@ public class ParserReuters extends Parser {
 				
 		ArrayList<String> links = new ArrayList<String>();		
 		Iterator<Element> itr = elements.iterator();
-		String hostUrl = page.url.getProtocol()+"://"+page.url.getHost();
 		
 		// top story
 		Element topStory = page.getSource().getElementById("topStory").getFirstElement("a ");
 		String topUrlText = topStory.getStartTag().getAttributeValue("href");			
 		
-		if ( topUrlText != null ) {
-			if (topUrlText.startsWith("/")) {					
-				topUrlText=hostUrl+topUrlText;		
-			}
-			if ((topUrlText.contains("article")) || (topUrlText.contains("places")) || (true)) {
-				URL topUrl = Page.StringToURL(topUrlText);
-				if ((topUrl != null) && (!topUrl.toString().contains("?videoId"))) {
-					links.add(topUrl.toString());	
-				}		
-			}
+		if ((topUrlText = cleanLink(topUrlText, page)) != null) {
+			links.add(topUrlText);	
 		}
 		
 		// other links
@@ -90,16 +81,8 @@ public class ParserReuters extends Parser {
 			Element element = itr.next();
 			String urlText = element.getStartTag().getAttributeValue("href");			
 			
-			if ( urlText != null ) {
-				if (urlText.startsWith("/")) {					
-					urlText=hostUrl+urlText;		
-				}
-				if ((urlText.contains("article")) || (urlText.contains("places")) || (true)) {
-					URL url = Page.StringToURL(urlText);
-					if ((url != null) && (!url.toString().contains("?videoId")) && (!url.toString().contains("standardchartered-iran"))) {
-						links.add(url.toString());	
-					}		
-				}
+			if ((urlText = cleanLink(urlText, page)) != null) {
+				links.add(urlText);	
 			}			
 		}
 				
@@ -117,20 +100,22 @@ public class ParserReuters extends Parser {
 		
 		String hostUrl = page.url.getProtocol()+"://"+page.url.getHost();
 		
-		if (link == null)
+		if ((link == null) || (link.contains("?videoId"))) {
 			return null;
-		
-		if (link.startsWith("/")) {					
-			link=hostUrl+link;		
 		}
 		
+		if (link.startsWith("/")) {
+			link=hostUrl+link;		
+		}
+			
 		URL linkUrl = Page.StringToURL(link);
 		
-		if (linkUrl.toString().contains("?videoId"))
+		if (linkUrl == null) {
 			return null;
-		
-		return linkUrl.toString();
-		
+		}
+		else {
+			return linkUrl.toString();
+		}
 	}
 	
 	/**
@@ -184,17 +169,20 @@ public class ParserReuters extends Parser {
 		if (element != null) {
 			Element locElement = element.getFirstElement("class", "location", true);
 			Element timeElement = element.getFirstElement("class", "timestamp", true);
-			if (locElement != null) 	
+			
+			if (locElement != null) { 
 				page.location = new String(locElement.getContent().toString());				
-						
+			}
+			
 			if (timeElement != null) {
 				try {
 					page.timestamp = new SimpleDateFormat("EEE MMM dd, yyyy hh:mmaa zzz", Locale.ENGLISH).parse(timeElement.getContent().toString());
 				}
-				catch (Exception e) {	}
+				catch (Exception e) {
+					System.out.println("Wrong date / time format : " + timeElement.getContent().toString());
+				}
 			}
-		}		
-	
+		}	
 		return page.text;
 	}
 	
@@ -276,9 +264,9 @@ public class ParserReuters extends Parser {
 				if ((urlText.contains("article/")) || (urlText.contains("places"))) {
 					URL url = Page.StringToURL(urlText);
 					Link newLink = new Link(anchorText, url);				
-					links.add(newLink);	
+					links.add(newLink);
 				}
-			}			
+			}
 		}
 		return links;
 	}
