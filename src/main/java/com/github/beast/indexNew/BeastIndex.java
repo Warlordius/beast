@@ -1,4 +1,4 @@
-package beast.indexNew;
+package com.github.beast.indexNew;
 
 import java.io.*;
 import java.net.URL;
@@ -16,14 +16,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
+import com.github.beast.Model;
+import com.github.beast.page.Page;
+import com.github.beast.page.PageReuters;
+import com.github.beast.parser.ParserReuters;
+
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLWriter;
-
-import beast.Model;
-import beast.page.Page;
-import beast.page.PageReuters;
-import beast.parser.ParserReuters;
 
 public class BeastIndex {
 

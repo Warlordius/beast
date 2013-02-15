@@ -1,4 +1,4 @@
-package beast.page;
+package com.github.beast.page;
 
 import java.io.*;
 import java.net.*;
@@ -6,8 +6,8 @@ import java.util.*;
 
 import net.htmlparser.jericho.Source;
 
-import beast.Model;
-import beast.parser.Parser;
+import com.github.beast.Model;
+import com.github.beast.parser.Parser;
 
 public abstract class Page {
 

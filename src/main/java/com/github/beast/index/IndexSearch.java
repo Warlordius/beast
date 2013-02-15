@@ -1,4 +1,4 @@
-package beast.index;
+package com.github.beast.index;
 
 import java.io.*;
 
@@ -14,7 +14,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
-import beast.Model;
+import com.github.beast.Model;
 
 public class IndexSearch{
 

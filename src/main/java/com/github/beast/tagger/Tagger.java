@@ -1,4 +1,4 @@
-package beast.tagger;
+package com.github.beast.tagger;
 
 import java.util.ArrayList;
 import java.util.Random;

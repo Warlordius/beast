@@ -1,9 +1,9 @@
-package beast.parser;
+package com.github.beast.parser;
 
 import java.net.URL;
 import java.util.*;
 
-import beast.page.*;
+import com.github.beast.page.*;
 
 import net.htmlparser.jericho.*;
 
@@ -80,7 +80,7 @@ public class Parser{
 				URL url = Page.StringToURL(urlText);
 				Link newLink = new Link(anchorText, url);				
 				links.add(newLink);	
-			}			
+			}
 		}
 		return links;
 	}

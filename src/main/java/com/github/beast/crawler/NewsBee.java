@@ -1,11 +1,11 @@
-package beast.crawler;
+package com.github.beast.crawler;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Random;
 
-import beast.Model;
-import beast.page.Page;
+import com.github.beast.Model;
+import com.github.beast.page.Page;
 
 public class NewsBee extends Bee {
 

@@ -1,4 +1,4 @@
-package beast;
+package com.github.beast;
 
 import java.awt.*;
 import javax.swing.*;

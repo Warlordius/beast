@@ -1,4 +1,4 @@
-package beast.index;
+package com.github.beast.index;
 
 import java.io.*;
 import java.net.URL;
@@ -18,8 +18,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
-import beast.Model;
-import beast.page.Page;
+import com.github.beast.Model;
+import com.github.beast.page.Page;
 
 
 public class Index{

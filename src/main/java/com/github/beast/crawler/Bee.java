@@ -1,8 +1,8 @@
-package beast.crawler;
+package com.github.beast.crawler;
 
 import java.util.*;
 
-import beast.page.Page;
+import com.github.beast.page.Page;
 
 public abstract class Bee extends Thread {
 
