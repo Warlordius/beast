@@ -9,244 +9,247 @@ import com.github.beast.page.Page;
 
 public class NewsBee extends Bee {
 
-	private static final int REFRESH_DELAY = 1800000;
+    private static final int REFRESH_DELAY = 1800000;
 
-	public NewsBee(Crawler crawler) {
+    public NewsBee(Crawler crawler) {
 
-		super(crawler);
+	super(crawler);
+    }
+
+    public double evalQuality() {
+
+	return 0;
+    }
+
+    /**
+     * Initializes a bee. Initialization consists of selecting a random source
+     * from currently available sources and selecting a random keyword from the
+     * selected source.
+     */
+    public void initBee() {
+
+	this.source = crawler.randomSource();
+	this.keyword = crawler.index.getRandKeyword(source);
+	this.status = FORAGING;
+
+	if (ANNOUNCE) System.out.println("Init: " + source.title + " --- " + keyword);
+    }
+
+    /**
+     * Evaluate the relevance of a given page to a given keyword, considering
+     * both content of the page and currently identified keywords. If the given
+     * keyword was already identified and its relevance value is higher than
+     * relevance value obtained only from the page content, old keyword
+     * relevance is used, otherwise value based on the page content is returned.
+     * 
+     * @param page - Page to be evaluated.
+     * @param keyword - Keyword to be considered.
+     * @return A double representing the relevance of the given page to the
+     *         given keyword.
+     */
+    protected double evalQuality(final Page page, final String keyword) {
+
+	// evalute the quality of keyword considering only the page
+	double pageQuality = evalSourceQuality(page, keyword);
+
+	// evaluate the quality of keyword considering page surround
+	double surroundQuality = evalSurroundQuality(page, keyword);
+
+	return Math.max(pageQuality, surroundQuality);
+    }
+
+    /**
+     * Evaluate the relevance of a given page to a given keyword, considering
+     * only the content of the page. Uses semantics if enabled.
+     * 
+     * @param page - Page to be evaluated.
+     * @param keyword - Keyword to be used for evaluation.
+     * @return A double representing the relevance of the given page to the
+     *         given keyword.
+     */
+    protected double evalSourceQuality(final Page page, final String keyword) {
+
+	final int GRANULARITY = 1000;
+
+	int maxPoints = 0;
+	int recPoints = 0;
+
+	ArrayList<String> lookups;
+	if (Model.config.useSemantics()) {
+	    lookups = Model.semEngine.getSynonyms(keyword);
+
+	    for (int i = 0; i < lookups.size(); i++) {
+		lookups.set(i, lookups.get(i).toLowerCase());
+	    }
 	}
 
-	public double evalQuality() {
-
-		return 0;
+	else {
+	    lookups = new ArrayList<String>();
+	    lookups.add(keyword.toLowerCase());
 	}
 
-	/**
-	 * Initializes a bee. Initialization consists of selecting a random source
-	 * from currently available sources and selecting a random keyword from the
-	 * selected source.
-	 */
-	public void initBee() {
+	String keywordInLow = keyword.toLowerCase();
 
-		this.source = crawler.randomSource();
-		this.keyword = crawler.index.getRandKeyword(source);
-		this.status = FORAGING;
-
-		if (ANNOUNCE) System.out.println("Init: " + source.title + " --- " + keyword);
+	if (!page.indexed) {
+	    Model.crawler.index.indexPage(page);
 	}
 
-	/**
-	 * Evaluate the relevance of a given page to a given keyword, considering
-	 * both content of the page and currently identified keywords. If the given
-	 * keyword was already identified and its relevance value is higher than
-	 * relevance value obtained only from the page content, old keyword
-	 * relevance is used, otherwise value based on the page content is returned.
-	 * 
-	 * @param page - Page to be evaluated.
-	 * @param keyword - Keyword to be considered.
-	 * @return A double representing the relevance of the given page to the
-	 *         given keyword.
-	 */
-	protected double evalQuality(final Page page, final String keyword) {
+	maxPoints = (int) Math.ceil(page.text.length() / GRANULARITY);
 
-		// evalute the quality of keyword considering only the page
-		double pageQuality = evalSourceQuality(page, keyword);
+	if (maxPoints > 0) {
+	    // careful not to exceed the end of string
+	    for (int i = 0; i < maxPoints - 1; i++) {
+		String subString = page.text.substring(i * GRANULARITY, (i + 1) * GRANULARITY);
+		if (subString.toLowerCase().contains(keywordInLow)) {
+		    recPoints = recPoints + 1;
+		}
+	    }
 
-		// evaluate the quality of keyword considering page surround
-		double surroundQuality = evalSurroundQuality(page, keyword);
+	    // final part of string that contains <= GRANULARITY chars
+	    String subString = page.text.substring((maxPoints - 1) * GRANULARITY);
 
-		return Math.max(pageQuality, surroundQuality);
+	    if (subString.toLowerCase().contains(keywordInLow)) {
+		recPoints = recPoints + 1;
+	    }
+
+	    // increase for perex
+	    if ((page.perex != null) && (page.perex.length() > 0)) {
+		maxPoints = maxPoints + 2;
+		if (page.perex.toString().toLowerCase().contains(keywordInLow)) {
+		    recPoints = recPoints + 2;
+		}
+	    }
 	}
 
-	/**
-	 * Evaluate the relevance of a given page to a given keyword, considering
-	 * only the content of the page. Uses semantics if enabled.
-	 * 
-	 * @param page - Page to be evaluated.
-	 * @param keyword - Keyword to be used for evaluation.
-	 * @return A double representing the relevance of the given page to the
-	 *         given keyword.
-	 */
-	protected double evalSourceQuality(final Page page, final String keyword) {
-
-		final int GRANULARITY = 1000;
-
-		int maxPoints = 0;
-		int recPoints = 0;
-
-		ArrayList<String> lookups;
-
-		if (Model.useSemantics) {
-			lookups = Model.semEngine.getSynonyms(keyword);
-
-			for (int i = 0; i < lookups.size(); i++) {
-				lookups.set(i, lookups.get(i).toLowerCase());
-			}
-		}
-
-		else {
-			lookups = new ArrayList<String>();
-			lookups.add(keyword.toLowerCase());
-		}
-
-		String keywordInLow = keyword.toLowerCase();
-
-		if (!page.indexed) {
-			Model.crawler.index.indexPage(page);
-		}
-
-		maxPoints = (int) Math.ceil(page.text.length() / GRANULARITY);
-
-		if (maxPoints > 0) {
-			// careful not to exceed the end of string
-			for (int i = 0; i < maxPoints - 1; i++) {
-				String subString = page.text.substring(i * GRANULARITY, (i + 1) * GRANULARITY);
-				if (subString.toLowerCase().contains(keywordInLow)) {
-					recPoints = recPoints + 1;
-				}
-			}
-
-			// final part of string that contains <= GRANULARITY chars
-			String subString = page.text.substring((maxPoints - 1) * GRANULARITY);
-
-			if (subString.toLowerCase().contains(keywordInLow)) {
-				recPoints = recPoints + 1;
-			}
-
-			// increase for perex
-			if ((page.perex != null) && (page.perex.length() > 0)) {
-				maxPoints = maxPoints + 2;
-				if (page.perex.toString().toLowerCase().contains(keywordInLow)) {
-					recPoints = recPoints + 2;
-				}
-			}
-		}
-
-		// increase for title
-		if ((page.title != null) && (!page.title.isEmpty())) {
-			maxPoints = maxPoints + 5;
-			if (page.title.toLowerCase().contains(keywordInLow)) {
-				recPoints = recPoints + 5;
-			}
-		}
-
-		if (recPoints > maxPoints) {
-			recPoints = maxPoints;
-		}
-
-		// evalute the quality of keyword considering only the page
-		double pageQuality = (double) recPoints / maxPoints;
-
-		return pageQuality;
+	// increase for title
+	if ((page.title != null) && (!page.title.isEmpty())) {
+	    maxPoints = maxPoints + 5;
+	    if (page.title.toLowerCase().contains(keywordInLow)) {
+		recPoints = recPoints + 5;
+	    }
 	}
 
-	/**
-	 * Evaluate the relevance of a given page to a given keyword, considering
-	 * the pre-existing keywords relevance, disregarding the page content
-	 * itself.
-	 * 
-	 * @param page - Page to be evaluated.
-	 * @param keyword - Keyword to be used for evaluation.
-	 * @return A double representing the relevance of the given page to the
-	 *         given keyword.
-	 */
-	protected double evalSurroundQuality(final Page page, final String keyword) {
-
-		Double relevance = crawler.index.getKeywordRelevance(keyword, page);
-		return relevance;
+	if (recPoints > maxPoints) {
+	    recPoints = maxPoints;
 	}
 
-	/**
-	 * Method encapsulating foraging behavior of a bee. The method is invoked,
-	 * if a bee decides to forage for its source. During foraging, current
-	 * source is processed, if not processed before and the quality of source is
-	 * assessed, considering the current keyword.
-	 * 
-	 * Subsequently a new source is selected and probed, so that further
-	 * decisions may be undertaken in the future.
-	 */
-	protected void doWhileForaging() {
+	// evalute the quality of keyword considering only the page
+	double pageQuality = (double) recPoints / maxPoints;
 
-		if (ANNOUNCE) System.out.println("Foraging: " + source.url.toString() + ", keyword: " + keyword);
+	return pageQuality;
+    }
 
-		// process the source first, if not processed yet. if processing
-		// fails, leave immediatelly
-		if (!source.processed) {
+    /**
+     * Evaluate the relevance of a given page to a given keyword, considering
+     * the pre-existing keywords relevance, disregarding the page content
+     * itself.
+     * 
+     * @param page - Page to be evaluated.
+     * @param keyword - Keyword to be used for evaluation.
+     * @return A double representing the relevance of the given page to the
+     *         given keyword.
+     */
+    protected double evalSurroundQuality(final Page page, final String keyword) {
 
-			if (!source.process()) {
-				// desire = 0;
-				return;
-			}
+	Double relevance = crawler.index.getKeywordRelevance(keyword, page);
+	return relevance;
+    }
 
-			Model.log("new source found: " + source.timestamp.toString() + " " + source.url.toString());
-		}
-		quality = evalQuality(source, keyword);
+    /**
+     * Method encapsulating foraging behavior of a bee. The method is invoked,
+     * if a bee decides to forage for its source. During foraging, current
+     * source is processed, if not processed before and the quality of source is
+     * assessed, considering the current keyword.
+     * 
+     * Subsequently a new source is selected and probed, so that further
+     * decisions may be undertaken in the future.
+     */
+    protected void doWhileForaging() {
 
-		// visit a neighbouring source
-		newSource = crawler.index.getRandNeighbour(source);
+	if (ANNOUNCE) System.out.println("Foraging: " + source.url.toString() + ", keyword: " + keyword);
 
-		// if source is sucessfully processed, index it, otherwise leave
-		if (!newSource.indexed) {
-			if (newSource.process())
-				crawler.index.indexPage(newSource);
-			else {
-				// desire = 0;
-				return;
-			}
-		}
+	// process the source first, if not processed yet. if processing
+	// fails, leave immediatelly
+	if (!source.processed) {
 
-		// if source is old enough, reindex it anew
-		Calendar now = Calendar.getInstance();
+	    if (!source.process()) {
+		// desire = 0;
+		return;
+	    }
 
-		final double maxDelay = REFRESH_DELAY;
+	    Model.log("new source found: " + source.timestamp.toString() + " " + source.url.toString());
+	}
+	quality = evalQuality(source, keyword);
 
-		if ((source.indexed) && (now.getTimeInMillis() - source.lastIndexed.getTime() > maxDelay)) {
-			crawler.index.reindexPage(source);
-			quality = evalQuality(source, keyword);
-			Model.log("source refreshed: " + source.timestamp.toString() + " " + quality + " " + source.url.toString());
-		}
-
-		newQuality = evalQuality(newSource, keyword);
-		desire = Math.min(quality, newQuality);
+	// visit a neighbouring source
+	newSource = crawler.index.getRandNeighbour(source);
+	if (newSource == null) {
+	    desire = 0;
+	    return;
 	}
 
-	@SuppressWarnings("unused")
-	protected void doWhileObserving() {
-
-		if ((ANNOUNCE) && (source != null)) System.out.println("Observing: " + source.url.toString());
-
-		source = null;
+	// if source is sucessfully processed, index it, otherwise leave
+	if (!newSource.indexed) {
+	    if (newSource.process()) {
+		crawler.index.indexPage(newSource);
+	    } else {
+		desire = 0;
+		return;
+	    }
 	}
 
-	public boolean decideToDance() {
+	// if source is old enough, reindex it anew
+	Calendar now = Calendar.getInstance();
 
-		final double reducingFactor = 0.85;
+	final double maxDelay = REFRESH_DELAY;
 
-		Random generator = new Random();
-
-		if (generator.nextDouble() > (desire * reducingFactor)) {
-			return false;
-		}
-		return true;
+	if ((source.indexed) && (now.getTimeInMillis() - source.lastIndexed.getTime() > maxDelay)) {
+	    crawler.index.reindexPage(source);
+	    quality = evalQuality(source, keyword);
+	    Model.log("source refreshed: " + source.timestamp.toString() + " " + quality + " " + source.url.toString());
 	}
 
-	protected void doWhileDancing() {
+	newQuality = evalQuality(newSource, keyword);
+	desire = Math.min(quality, newQuality);
+    }
 
-		if (ANNOUNCE) System.out.println("Dancing: " + source.url.toString() + " keyword: " + keyword);
+    @SuppressWarnings("unused")
+    protected void doWhileObserving() {
 
-		if (newDance) {
-			crawler.index.addRelation(source, newSource, keyword, desire);
-			crawler.index.addKeyword(source, keyword, Math.max(quality, newQuality * crawler.DECAY));
-			crawler.index.addKeyword(newSource, keyword, Math.max(quality * crawler.DECAY, newQuality));
-		}
+	if ((ANNOUNCE) && (source != null)) System.out.println("Observing: " + source.url.toString());
+
+	source = null;
+    }
+
+    public boolean decideToDance() {
+
+	final double reducingFactor = 1;
+
+	Random generator = new Random();
+
+	if (generator.nextDouble() > (desire * reducingFactor)) {
+	    return false;
 	}
+	return true;
+    }
 
-	protected void follow(Bee bee) {
+    protected void doWhileDancing() {
 
-		if (bee.status == DANCING) {
-			this.status = FORAGING;
-			this.source = bee.source;
-			this.keyword = crawler.index.getRandKeyword(source);
-		}
+	if (ANNOUNCE) System.out.println("Dancing: " + source.url.toString() + " keyword: " + keyword);
+
+	if (newDance) {
+	    crawler.index.addRelation(source, newSource, keyword, desire);
+	    crawler.index.addKeyword(source, keyword, Math.max(quality, newQuality * crawler.DECAY));
+	    crawler.index.addKeyword(newSource, keyword, Math.max(quality * crawler.DECAY, newQuality));
 	}
+    }
+
+    protected void follow(Bee bee) {
+
+	if (bee.status == DANCING) {
+	    this.status = FORAGING;
+	    this.source = bee.source;
+	    this.keyword = crawler.index.getRandKeyword(source);
+	}
+    }
 }

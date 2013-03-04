@@ -81,7 +81,9 @@ public abstract class Bee extends Thread {
 	 * Method encapsulating foraging behavior of a bee. The method is invoked,
 	 * if a bee decides to forage for its source.
 	 */
-	protected abstract void doWhileForaging();
+	protected void doWhileForaging() {
+	    
+	}
 
 	/**
 	 * Method encapsulating observing behavior of a bee. First a bee to be

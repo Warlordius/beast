@@ -143,7 +143,9 @@ public class ParserReuters extends Parser {
 		List<Link> linksDiscussed = parseLinks(page.getSource().getElementById("most-popular"), HOMEPAGE);
 
 		for (Link link : linksDiscussed) {
-			if (!(linksRelated.contains(link))) linksRelated.add(link);
+			if (!(linksRelated.contains(link))) {
+				linksRelated.add(link);
+			}
 		}
 
 		return linksRelated;

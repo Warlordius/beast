@@ -1,0 +1,15 @@
+ TODO:
+
+ - comments
+ - change iterating cycles to foreachs
+ - graphics
+ - fix up semantics
+
+
+IDEAS:
+
+ - rolldown menus for choice of tagger / graph export / parser etc.
+ - options for semantics, keyword types (leave choices up to the user)
+ - selectable paths, config file with defaults
+ - (maybe) selectable name format for graph output directory
+ - current rating of SW
