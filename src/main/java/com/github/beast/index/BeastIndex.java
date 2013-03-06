@@ -1,4 +1,4 @@
-package com.github.beast.indexNew;
+package com.github.beast.index;
 
 import java.io.*;
 import java.net.URL;

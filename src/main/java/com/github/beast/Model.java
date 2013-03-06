@@ -6,42 +6,31 @@ import java.util.*;
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
 
+import com.github.beast.configuration.Configuration;
 import com.github.beast.crawler.Crawler;
-import com.github.beast.indexNew.BeastIndex;
+import com.github.beast.index.BeastIndex;
 import com.github.beast.semantics.SemanticEngine;
 import com.github.beast.tagger.Tagger;
-import com.github.configuration.Configuration;
 
 public class Model {
 
-    //public static final String LOGGING = "use_logging";
-    //public static final String SEMANTICS = "use_semantics";
-    //public static final String RESOURCE_DIR = "resource_dir";
-    //public static final String LOG_FILE = "log_file";
-    //public static final String DEFAULT_DATABASE_DIR = "database_dir";
     public static final String PROPERTIES_FILE = ".properties";
 
     public static final BeastIndex index = new BeastIndex();
     public static final Crawler crawler = new Crawler(index);
     public static final Tagger tagger = new Tagger();
-    public static final SemanticEngine semEngine = new SemanticEngine();
-    public static final Properties properties = new Properties();
     public static final Configuration config = Configuration.getInstance(PROPERTIES_FILE);
-
-    // public static Tagger tagger;
+    public static final SemanticEngine semEngine = new SemanticEngine();
+    
+    //public static Tagger tagger;
 
     public static void main(String[] args) throws Exception {
 
-	// get properties
-	properties.load(new FileInputStream(PROPERTIES_FILE));
-
-	// wordnet config
-	System.setProperty("wordnet.database.dir", "C:\\Program Files (x86)\\Wordnet\\2.1\\dict\\");
-
-	// neo4j config
-	Config.LoggerProvider = LoggerProvider.DISABLED;
-
-	runHarvestToday(50, 10000);
+	System.setProperty("wordnet.database.dir", config.getWordnetDir());	// wordnet setup
+	Config.LoggerProvider = LoggerProvider.DISABLED;			// neo4j logging setup
+	
+	//SemanticEngine.a;
+	runHarvestToday(50, 10000);		
     }
 
     public static void log(String string) {
@@ -54,7 +43,8 @@ public class Model {
 		writer.append(System.getProperty("line.separator"));
 		writer.close();
 	    } catch (Exception e) {
-		System.out.println("");
+		System.out.println(e.getMessage());
+		System.out.println(e.getStackTrace());
 	    }
 	}
     }

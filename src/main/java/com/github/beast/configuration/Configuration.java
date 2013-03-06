@@ -1,4 +1,4 @@
-package com.github.configuration;
+package com.github.beast.configuration;
 
 import java.io.*;
 import java.util.Properties;
@@ -19,27 +19,38 @@ import java.util.Properties;
 public class Configuration {
 
     // default property values
-    private static final String DEFAULT_LOGGING = "true";				// needs to be string, because of property parser
-    private static final String DEFAULT_SEMANTICS = "true";				// needs to be string, because of property parser
-    private static final String DEFAULT_RESOURCE_DIR = "C:\\_beast_data\\";
-    private static final String DEFAULT_DATABASE_DIR = "C:\\_beast_data\\graph\\";
-    private static final String DEFAULT_LOG_FILE = "C:\\_beast_data\\log.txt\\";
-    private static final String DEFAULT_PROPERTIES_FILE = ".properties";
+    private static final String DEFAULT_LOGGING 		= "true";		// needs to be string, because of property parser
+    private static final String DEFAULT_SEMANTICS 		= "true";		// needs to be string, because of property parser
+    private static final String DEFAULT_RESOURCE_DIR 		= "C:\\_beast_data\\";
+    private static final String DEFAULT_DATABASE_DIR 		= "C:\\_beast_data\\graph\\";
+    private static final String DEFAULT_LOG_FILE 		= "C:\\_beast_data\\log.txt\\";
+    private static final String DEFAULT_WORDNET_LOCATION 	= "C:\\Program Files (x86)\\Wordnet\\2.1\\dict\\";
+    private static final String DEFAULT_BEE_MESSAGES 		= "false";
+    private static final String DEFAULT_BEE_ADD_THRESHOLD 	= "0.3";		// needs to be string, because of property parser
+    private static final String DEFAULT_PROPERTIES_FILE 	= ".properties";
 
     // property names
-    private static final String LOGGING = "use_logging";
-    private static final String SEMANTICS = "use_semantics";
-    private static final String RESOURCE_DIR = "resource_dir";
-    private static final String DATABASE_DIR = "database_dir";
-    private static final String LOG_FILE = "log_file";
+    private static final String LOGGING 		= "use_logging";
+    private static final String SEMANTICS 		= "use_semantics";
+    private static final String RESOURCE_DIR 		= "resource_dir";
+    private static final String DATABASE_DIR 		= "database_dir";
+    private static final String WORDNET_LOCATION 	= "wordnet_dir";
+    private static final String BEE_MESSAGES 		= "bee_messages";
+    private static final String BEE_ADD_THRESHOLD 	= "bee_add_threshold"; 
+    private static final String LOG_FILE 		= "log_file";
 
     private static Configuration instance;
 
     private boolean logging;
     private boolean semantics;
+    private boolean beeMessages;
+    
+    private double beeAddThreshold;
+    
     private String databaseDir;
     private String logFile;
     private String resourceDir;
+    private String wordnetDir;
 
     /**
      * Class constructor, reads config file at the default location and sets
@@ -88,6 +99,11 @@ public class Configuration {
 	}
     }
 
+    public double getBeeAddThreshold() {
+	
+	return beeAddThreshold;
+    }
+    
     public String getDatabaseDir() {
 
 	return databaseDir;
@@ -103,6 +119,11 @@ public class Configuration {
 	return resourceDir;
     }
 
+    public String getWordnetDir() {
+	
+	return wordnetDir;
+    }
+    
     public boolean useLogging() {
 
 	return logging;
@@ -111,6 +132,11 @@ public class Configuration {
     public boolean useSemantics() {
 
 	return semantics;
+    }
+    
+    public boolean useBeeMessages() {
+	
+	return beeMessages;
     }
 
     /**
@@ -126,7 +152,6 @@ public class Configuration {
 
 	try {
 	    properties.load(new FileInputStream(path));
-
 	} catch (FileNotFoundException e) {
 	    System.out.println(e.getMessage());
 	    System.exit(1);
@@ -137,8 +162,13 @@ public class Configuration {
 
 	logging = Boolean.parseBoolean(properties.getProperty(LOGGING, DEFAULT_LOGGING));
 	semantics = Boolean.parseBoolean(properties.getProperty(SEMANTICS, DEFAULT_SEMANTICS));
+	beeMessages = Boolean.parseBoolean(properties.getProperty(BEE_MESSAGES, DEFAULT_BEE_MESSAGES));
+	
+	beeAddThreshold = Double.parseDouble(properties.getProperty(BEE_ADD_THRESHOLD, DEFAULT_BEE_ADD_THRESHOLD));
+	
 	resourceDir = properties.getProperty(RESOURCE_DIR, DEFAULT_RESOURCE_DIR);
 	logFile = properties.getProperty(LOG_FILE, DEFAULT_LOG_FILE);
 	databaseDir = properties.getProperty(DATABASE_DIR, DEFAULT_DATABASE_DIR);
+	wordnetDir = properties.getProperty(WORDNET_LOCATION, DEFAULT_WORDNET_LOCATION);	
     }
 }

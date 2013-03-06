@@ -3,7 +3,7 @@ package com.github.beast.crawler;
 import java.util.*;
 
 import com.github.beast.Model;
-import com.github.beast.indexNew.BeastIndex;
+import com.github.beast.index.BeastIndex;
 import com.github.beast.page.Page;
 
 public class Crawler {
@@ -93,7 +93,6 @@ public class Crawler {
 
 	for (int i = 0; i < beeNum; i++) {
 	    Bee newBee = new NewsBee(this);
-	    newBee.initBee();
 	    bees.add(newBee);
 	}
     }
@@ -119,18 +118,6 @@ public class Crawler {
 
 	return stats;
     }
-
-    /*
-     * public double getAvgQuality() {
-     * 
-     * int count = 0; double sum = 0;
-     * 
-     * for (int i = 0; i < index.pages.size(); i++) { if
-     * (index.pages.get(i).quality > 0) { count++; sum = sum +
-     * index.pages.get(i).quality; } }
-     * 
-     * return (sum / count); }
-     */
 
     public Page randomSource() {
 

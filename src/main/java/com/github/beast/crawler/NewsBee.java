@@ -11,28 +11,23 @@ public class NewsBee extends Bee {
 
     private static final int REFRESH_DELAY = 1800000;
 
+    private double newQuality;
+    private Page newSource;
+    private String keyword;
+    
     public NewsBee(Crawler crawler) {
 
 	super(crawler);
+	this.keyword = crawler.index.getRandKeyword(source);
+	
+	if (Model.config.useBeeMessages()) {
+	    System.out.println("Init: " + source.title + " --- " + keyword);
+	}
     }
 
     public double evalQuality() {
 
 	return 0;
-    }
-
-    /**
-     * Initializes a bee. Initialization consists of selecting a random source
-     * from currently available sources and selecting a random keyword from the
-     * selected source.
-     */
-    public void initBee() {
-
-	this.source = crawler.randomSource();
-	this.keyword = crawler.index.getRandKeyword(source);
-	this.status = FORAGING;
-
-	if (ANNOUNCE) System.out.println("Init: " + source.title + " --- " + keyword);
     }
 
     /**
@@ -76,8 +71,9 @@ public class NewsBee extends Bee {
 
 	ArrayList<String> lookups;
 	if (Model.config.useSemantics()) {
+	    
 	    lookups = Model.semEngine.getSynonyms(keyword);
-
+	    
 	    for (int i = 0; i < lookups.size(); i++) {
 		lookups.set(i, lookups.get(i).toLowerCase());
 	    }
@@ -166,7 +162,9 @@ public class NewsBee extends Bee {
      */
     protected void doWhileForaging() {
 
-	if (ANNOUNCE) System.out.println("Foraging: " + source.url.toString() + ", keyword: " + keyword);
+	if (Model.config.useBeeMessages()) {
+	    System.out.println("Foraging: " + source.url.toString() + ", keyword: " + keyword);
+	}
 
 	// process the source first, if not processed yet. if processing
 	// fails, leave immediatelly
@@ -213,10 +211,11 @@ public class NewsBee extends Bee {
 	desire = Math.min(quality, newQuality);
     }
 
-    @SuppressWarnings("unused")
     protected void doWhileObserving() {
 
-	if ((ANNOUNCE) && (source != null)) System.out.println("Observing: " + source.url.toString());
+	if ((Model.config.useBeeMessages()) && (source != null)) {
+	    System.out.println("Observing: " + source.url.toString());
+	}
 
 	source = null;
     }
@@ -235,12 +234,15 @@ public class NewsBee extends Bee {
 
     protected void doWhileDancing() {
 
-	if (ANNOUNCE) System.out.println("Dancing: " + source.url.toString() + " keyword: " + keyword);
+	if (Model.config.useBeeMessages()) {
+	    System.out.println("Dancing: " + source.url.toString() + " keyword: " + keyword);
+	}
 
-	if (newDance) {
+	if (firstDance) {
 	    crawler.index.addRelation(source, newSource, keyword, desire);
 	    crawler.index.addKeyword(source, keyword, Math.max(quality, newQuality * crawler.DECAY));
 	    crawler.index.addKeyword(newSource, keyword, Math.max(quality * crawler.DECAY, newQuality));
+	    firstDance = false;
 	}
     }
 
@@ -251,5 +253,12 @@ public class NewsBee extends Bee {
 	    this.source = bee.source;
 	    this.keyword = crawler.index.getRandKeyword(source);
 	}
+    }
+    
+    public void dispatch() {
+
+	source = crawler.randomSource();
+	keyword = crawler.index.getRandKeyword(source);
+	status = FORAGING;
     }
 }
