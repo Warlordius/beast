@@ -2,7 +2,7 @@ package com.github.beast.crawler;
 
 import java.util.*;
 
-import com.github.beast.Model;
+import com.github.beast.Beast;
 import com.github.beast.index.BeastIndex;
 import com.github.beast.page.Page;
 
@@ -104,17 +104,17 @@ public class Crawler {
 	int observingBees = 0;
 
 	for (int j = 0; j < bees.size(); j++) {
-    	    if (bees.get(j).status == Bee.FORAGING) {
+    	    if (bees.get(j).status == Bee.Status.FORAGING) {
     		foragingBees++;
-    	    } else if (bees.get(j).status == Bee.DANCING) {
+    	    } else if (bees.get(j).status == Bee.Status.DANCING) {
     		dancingBees++;
-    	    } else if (bees.get(j).status == Bee.OBSERVING) {
+    	    } else if (bees.get(j).status == Bee.Status.OBSERVING) {
 		observingBees++;
 	    }
 	}
 	String stats = String.format("iteration %04d, foraging bees %03d, dancing bees %03d, observing bees %03d", i, foragingBees, dancingBees,
 		observingBees);
-	Model.log(stats);
+	Beast.log(stats);
 
 	return stats;
     }

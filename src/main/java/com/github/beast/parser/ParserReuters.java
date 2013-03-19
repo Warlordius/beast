@@ -1,6 +1,7 @@
 package com.github.beast.parser;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.Locale;
 import com.github.beast.page.Link;
 import com.github.beast.page.Page;
 import com.github.beast.page.PageReuters;
+import com.github.beast.utility.Utility;
 
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.Segment;
@@ -31,7 +33,8 @@ public class ParserReuters extends Parser {
 		page.links = parseLinks(page);
 
 		// if no related pages are found, try extracting related facts
-		if (page.links.size() == 0) page.links = parseLinks(page.getSource().getElementById("relatedFactboxes"), "http://www.reuters.com");
+		if (page.links.size() == 0)
+			page.links = parseLinks(page.getSource().getElementById("relatedFactboxes"), "http://www.reuters.com");
 
 		return page.getSource();
 	}
@@ -59,7 +62,8 @@ public class ParserReuters extends Parser {
 
 			link = cleanLink(link, page);
 
-			if (link != null) links.add(link);
+			if (link != null)
+				links.add(link);
 
 			return links;
 		}
@@ -110,12 +114,12 @@ public class ParserReuters extends Parser {
 			link = hostUrl + link;
 		}
 
-		URL linkUrl = Page.StringToURL(link);
-
-		if (linkUrl == null) {
-			return null;
-		} else {
+		try {
+			URL linkUrl = Utility.stringToURL(link);
 			return linkUrl.toString();
+		} catch (MalformedURLException e) {
+			System.err.println("Malformed URL " + link);
+			return null;
 		}
 	}
 
@@ -132,7 +136,8 @@ public class ParserReuters extends Parser {
 		int pos = rawTitle.lastIndexOf('|');
 
 		// cut out the part after last '|' character (i.e. " | Reuters ")
-		if (pos > 0) rawTitle = rawTitle.substring(0, pos);
+		if (pos > 0)
+			rawTitle = rawTitle.substring(0, pos);
 
 		return rawTitle.trim();
 	}
@@ -232,32 +237,45 @@ public class ParserReuters extends Parser {
 	public static ArrayList<String> getStartingPages() {
 
 		final String homePage = "http://www.reuters.com";
+		PageReuters page;
 
-		PageReuters page = new PageReuters(Page.StringToURL(homePage));
-		ParserReuters parser = new ParserReuters();
-
-		ArrayList<String> pages = parser.getLatestHeadlines(page);
-
-		return pages;
+		try {
+			page = new PageReuters(Utility.stringToURL(homePage));
+			ParserReuters parser = new ParserReuters();
+			ArrayList<String> pages = parser.getLatestHeadlines(page);
+			return pages;
+		} catch (MalformedURLException e) {
+			System.err.println(e.getMessage());
+			System.err.println(e.getStackTrace());
+			return null;
+		}
 	}
 
+	// TODO: fix duplicate code with Parser.parseLinks
 	public List<Link> parseLinks(Segment segment, String hostUrl) {
 
 		List<Link> links = new LinkedList<Link>();
+		URL url;
+		List<Element> elements;
+		Iterator<Element> itr;
+		String anchorText;
+		String urlText;
+		Element element;
+		Link newLink;
 
 		if (segment == null) {
 			return links;
 		}
 
-		List<Element> elements = segment.getAllElements("a ");
+		elements = segment.getAllElements("a ");
 
-		Iterator<Element> itr = elements.iterator();
+		itr = elements.iterator();
 
 		while (itr.hasNext()) {
 
-			Element element = itr.next();
-			String anchorText = element.getContent().toString();
-			String urlText = element.getStartTag().getAttributeValue("href");
+			element = itr.next();
+			anchorText = element.getContent().toString();
+			urlText = element.getStartTag().getAttributeValue("href");
 
 			if (urlText != null) {
 
@@ -266,9 +284,13 @@ public class ParserReuters extends Parser {
 				}
 
 				if ((urlText.contains("article/")) || (urlText.contains("places"))) {
-					URL url = Page.StringToURL(urlText);
-					Link newLink = new Link(anchorText, url);
-					links.add(newLink);
+					try {
+						url = Utility.stringToURL(urlText);
+						newLink = new Link(anchorText, url);
+						links.add(newLink);
+					} catch (MalformedURLException e) {
+						System.err.println("Malformed URL: " + urlText);
+					}
 				}
 			}
 		}

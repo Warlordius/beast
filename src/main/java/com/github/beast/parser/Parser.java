@@ -1,91 +1,111 @@
 package com.github.beast.parser;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
 import com.github.beast.page.*;
+import com.github.beast.utility.Utility;
 
 import net.htmlparser.jericho.*;
 
 public class Parser {
 
-    public Source parsePage(Page page) {
+	public Source parsePage(Page page) {
 
-	page.title = parseTitle(page);
-	page.setContent(parseContent(page));
-	page.links = parseLinks(page);
+		page.title = parseTitle(page);
+		page.setContent(parseContent(page));
+		page.links = parseLinks(page);
 
-	return page.getSource();
-    }
-
-    public String parseTitle(Page page) {
-
-	Element title = page.getSource().getFirstElement("title");
-	return title.getContent().toString().trim();
-    }
-
-    public StringBuffer parseContent(Page page) {
-
-	StringBuffer content = new StringBuffer(page.getSource().toString());
-	return content;
-    }
-
-    // parse all links
-    public List<Link> parseLinks(Page page) {
-	
-	List<Element> elements = page.getSource().getAllElements("a ");
-	List<Link> links = new LinkedList<Link>();
-	Iterator<Element> itr = elements.iterator();
-	String hostUrl = page.url.getProtocol() + "://" + page.url.getHost();
-
-	while (itr.hasNext()) {
-	    Element element = itr.next();
-	    String anchorText = element.getContent().toString();
-	    String urlText = element.getStartTag().getAttributeValue("href");
-
-	    if (urlText != null) {
-		if (urlText.startsWith("/")) {
-		    urlText = hostUrl + urlText;
-		}
-		URL url = Page.StringToURL(urlText);
-		if (url != null) {
-		    Link newLink = new Link(anchorText, url);
-		    links.add(newLink);
-		}
-	    }
+		return page.getSource();
 	}
 
-	return links;
-    }
+	public String parseTitle(Page page) {
 
-    // parse links with a given host url
-    public List<Link> parseLinks(Segment segment, String hostUrl) {
-
-	List<Link> links = new LinkedList<Link>();
-
-	if (segment == null) {
-	    return links;
+		Element title = page.getSource().getFirstElement("title");
+		return title.getContent().toString().trim();
 	}
 
-	List<Element> elements = segment.getAllElements("a ");
+	public StringBuffer parseContent(Page page) {
 
-	Iterator<Element> itr = elements.iterator();
+		StringBuffer content = new StringBuffer(page.getSource().toString());
+		return content;
+	}
 
-	while (itr.hasNext()) {
-	    Element element = itr.next();
-	    String anchorText = element.getContent().toString();
-	    String urlText = element.getStartTag().getAttributeValue("href");
+	// parse all links
+	public List<Link> parseLinks(Page page) {
 
-	    if (urlText != null) {
-		if (urlText.startsWith("/")) {
-		    urlText = hostUrl + urlText;
+		List<Element> elements = page.getSource().getAllElements("a ");
+		List<Link> links = new LinkedList<Link>();
+		Iterator<Element> itr = elements.iterator();
+		String hostUrl = page.url.getProtocol() + "://" + page.url.getHost();
+		URL url = null;
+		Link newLink;
+		Element element;
+		String anchorText;
+		String urlText;
+
+		while (itr.hasNext()) {
+			element = itr.next();
+			anchorText = element.getContent().toString();
+			urlText = element.getStartTag().getAttributeValue("href");
+
+			if (urlText != null) {
+				if (urlText.startsWith("/")) {
+					urlText = hostUrl + urlText;
+				}
+
+				try {
+					url = Utility.stringToURL(urlText);
+					newLink = new Link(anchorText, url);
+					links.add(newLink);
+				} catch (MalformedURLException e) {
+					System.err.println("Malformed URL: " + urlText);
+				}
+			}
 		}
 
-		URL url = Page.StringToURL(urlText);
-		Link newLink = new Link(anchorText, url);
-		links.add(newLink);
-	    }
+		return links;
 	}
-	return links;
-    }
+
+	// TODO: fix duplicate code with previous method
+	// parse links with a given host url
+	public List<Link> parseLinks(final Segment segment, final String hostUrl) {
+
+		List<Link> links = new LinkedList<Link>();
+		Element element;
+		String anchorText;
+		String urlText;
+		URL url = null;
+
+		if (segment == null) {
+			return links;
+		}
+
+		List<Element> elements = segment.getAllElements("a ");
+
+		Iterator<Element> itr = elements.iterator();
+
+		while (itr.hasNext()) {
+			element = itr.next();
+			anchorText = element.getContent().toString();
+			urlText = element.getStartTag().getAttributeValue("href");
+
+			if (urlText != null) {
+				
+				if (urlText.startsWith("/")) {
+					urlText = hostUrl + urlText;
+				}
+				
+				try {
+					url = Utility.stringToURL(urlText);
+					Link newLink = new Link(anchorText, url);
+					links.add(newLink);
+				} catch (MalformedURLException e) {
+					System.err.println("Malformed URL: " + urlText);
+				}
+			}
+		}
+		return links;
+	}
 }

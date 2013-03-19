@@ -1,4 +1,4 @@
-package com.github.beast;
+package com.github.beast.graphics;
 
 import java.awt.*;
 import javax.swing.*;

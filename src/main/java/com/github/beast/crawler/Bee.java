@@ -1,45 +1,66 @@
 package com.github.beast.crawler;
 
-import java.util.*;
+import java.util.Random;
 
 import com.github.beast.page.Page;
 
 /**
- * An abstract class representing a single Bee - agent inspired by social
- * insect. The agent visits one web {@link Page} at a time, stored in
- * {@link Bee#source} field and decides, whether to propagate the source for
- * other agents, continue visiting the source further, or abandon the source and
+ * Abstract class representing a single Bee - agent inspired by social
+ * insect. 
+ * 
+ * The agent visits one web {@link Page} at a time, stored in
+ * {@link #source} field and decides, whether to propagate the source for other
+ * agents, continue visiting the source further, or abandon the source and
  * select a different one.
  * <p>
  * The decision are based on the rating of a source, calculated in abstract
- * method {@link Bee#evalQuality()}. Specific conditions of electing to
- * propagate or abandon source may be specified by overriding
- * {@link Bee#decideToDance()} and {@link Bee#decideToLeave()} methods
- * respectively.
+ * method {@link #evalQuality()}. Specific conditions of electing to propagate
+ * or abandon source may be specified by overriding {@link #decideToDance()} and
+ * {@link #decideToLeave()} methods respectively.
  * <p>
  * All bees are assigned to a {@link Crawler} at construction. Individual agents
  * act independently, however the crawler holds information about all agents'
  * actions.
  * 
+ * @version 1.0
  * @author Štefan Sabo
+ * 
  * @see Crawler
  * @see Page
  */
 public abstract class Bee extends Thread {
 
-    protected static final int FORAGING = 0;
-    protected static final int OBSERVING = 1;
-    protected static final int DANCING = 2;
+    /**
+     * An abstract class representing a target for processing by {@link Bee
+     * Bees}.
+     * 
+     * @author Štefan Sabo
+     */
+    protected abstract class Source {
+	protected int num;
+	protected int numSecond;
+    }
+
+    /**
+     * Possible statuses of a bee, <i>foraging</i> {@link Bee} is currently
+     * processing a {@link Source}, <i>observing</i> Bee holds no Source and is
+     * deciding for a new one to process and <i>dancing</i> bee is currently
+     * propagating its Source, therefore recruiting other Bees to forage from
+     * the same Source.
+     */
+    protected enum Status {
+	FORAGING, OBSERVING, DANCING;
+    }
 
     protected boolean firstDance = false;	// set to true whenever starting to dance 
-    protected int status;			// TODO: change to enum
     protected int timeToDance;
     protected int timeToObserve;
+    protected Status status;
 
-    /** Rating of the visited {@link Bee#source} */
+    /** Rating of the visited {@link #source}. */
     protected double quality;
 
-    /** Adjusted {@link Bee#quality} used as base for decisions of {@link Bee}. */
+    /** Adjusted {@link #quality} used as base for decisions of {@link Bee}. */
     protected double desire;
 
     /** A web page currently being visited by the {@link Bee}. */
@@ -54,14 +75,15 @@ public abstract class Bee extends Thread {
      * construction a random source is assigned to the Bee and its status is set
      * to foraging.
      * 
-     * @param crawler the {@link Crawler} to which the bee will be assigned
+     * @param parentCrawler the {@link Crawler} to which the bee will be
+     *        assigned
      * @see Crawler
      */
-    public Bee(Crawler crawler) {
+    public Bee(final Crawler parentCrawler) {
 
-	this.crawler = crawler;
-	this.source = crawler.randomSource();
-	this.status = FORAGING;
+	crawler = parentCrawler;
+	source = parentCrawler.randomSource();
+	status = Status.FORAGING;
     }
 
     /**
@@ -69,25 +91,25 @@ public abstract class Bee extends Thread {
      * tree of a bee, deciding on whether to dance, forage, or observe in the
      * next iteration.
      */
-    final protected void doIteration() {
+    protected final void doIteration() {
 
-	if (status == FORAGING) {
+	if (status == Status.FORAGING) {
 
 	    forage();
 	    if (decideToLeave()) {
 		timeToObserve = getTimeToObserve();
-		status = OBSERVING;
+		status = Status.OBSERVING;
 	    } else if (decideToDance()) {
 		timeToDance = getTimeToDance();
 		firstDance = true;
-		status = DANCING;
+		status = Status.DANCING;
 	    }
 	    return;
 
-	} else if (status == OBSERVING) {
+	} else if (status == Status.OBSERVING) {
 	    observe();
 	    return;
-	} else if (status == DANCING) {
+	} else if (status == Status.DANCING) {
 	    dance();
 	}
     }
@@ -120,7 +142,7 @@ public abstract class Bee extends Thread {
 	timeToObserve--;
 	doWhileObserving();
 
-	if (randomBee.status == DANCING) {
+	if (randomBee.status == Status.DANCING) {
 	    follow(randomBee);
 	}
 	if (timeToObserve <= 0) {
@@ -138,7 +160,7 @@ public abstract class Bee extends Thread {
 	doWhileDancing();
 
 	if (timeToDance <= 0) {
-	    status = FORAGING;
+	    status = Status.FORAGING;
 	}
     }
 
@@ -149,7 +171,7 @@ public abstract class Bee extends Thread {
     protected void dispatch() {
 
 	source = crawler.randomSource();
-	status = FORAGING;
+	status = Status.FORAGING;
     }
 
     /**
@@ -159,11 +181,11 @@ public abstract class Bee extends Thread {
      * 
      * @param bee the bee to be followed
      */
-    protected void follow(Bee bee) {
+    protected void follow(final Bee bee) {
 
-	if (bee.status == DANCING) {
+	if (bee.status == Status.DANCING) {
 	    this.source = bee.source;
-	    this.status = FORAGING;
+	    this.status = Status.FORAGING;
 	}
     }
 
@@ -171,7 +193,7 @@ public abstract class Bee extends Thread {
      * Represents a single random decision of bee whether to dance for the
      * current source, based on current desire value of a bee. Under default
      * behavior, the probability of propagating (dancing for) a source is
-     * directly proportional to the current {@link Bee#desire}.
+     * directly proportional to the current {@link #desire}.
      * 
      * @return true if bee wants to dance for its source, otherwise false
      */
@@ -188,7 +210,7 @@ public abstract class Bee extends Thread {
      * Represents a single random decision of bee whether to abandon the current
      * source, based on current desire value of a bee. Under default behavior,
      * the probability of abandoning a source is directly proportional to <i>1 -
-     * {@link Bee#desire}</i>.
+     * {@link #desire}</i>.
      * 
      * @return true if bee wants to abandon its source, otherwise false
      */
@@ -203,56 +225,56 @@ public abstract class Bee extends Thread {
 
     /**
      * Evaluates the quality of currently visited source. Needs to be
-     * implemented in derived class.
+     * implemented in derived class. The number and type of parameters may
+     * differ for implementing methods, therefore parameter object is used to
+     * hold arguments.
      * 
+     * @param args parameter object passed to method
      * @return quality of currently visited source as a value from the interval
      *         of <code><0;1></code>
      */
-    protected abstract double evalQuality();
+    protected abstract double evalQuality(Object args);
 
     /**
      * Evaluates the desire of bee to dance / retain the currently visited
-     * source. May adjust {@link Bee#quality} by incorporating additional
+     * source, based on the current {@link #quality} of a source. Defaults to
+     * returning original value of quality, may however incorporate additional
      * dynamic factors, such as number of bees on a given source at the time of
-     * calculation, etc. Current default behavior is not to adjust quality.
+     * calculation, etc.
      * 
+     * @param currentQuality quality of the current source, without adjustments
      * @return value from the interval of <code><0;1></code>
      */
-    protected double evalDesire(double quality) {
+    protected double evalDesire(final double currentQuality) {
 
-	double desire;
+	double newDesire;
 
 	// TODO: rewrite to implement counters of bees at sources, without iterating over bees
 
 	// desire disabled
-	desire = quality;
-	// desire = quality - ( crawler.beesAtSource(source) *
-	// crawler.DESIRE_REDUCTION );
+	// desire = quality - ( crawler.beesAtSource(source) * crawler.DESIRE_REDUCTION );
+	newDesire = currentQuality;
 
-	if (desire < 0) {
-	    desire = 0;
-	}
-
-	return desire;
+	return (newDesire > 0) ? newDesire : 0;
     }
 
     /**
      * Calculate the initial length of a propagation for a given source.
      * 
      * @return the length of propagation in rounds
-     * @see Bee#getTimeToObserve()
+     * @see #getTimeToObserve()
      */
     protected int getTimeToDance() {
 
-	int timeToDance = (int) Math.ceil(crawler.MAX_DANCE_TIME * quality);
-	return timeToDance;
+	int time = (int) Math.ceil(crawler.MAX_DANCE_TIME * quality);
+	return time;
     }
 
     /**
      * Calculate the initial length of observation.
      * 
      * @return the length of observation in rounds
-     * @see Bee#getTimeToDance()
+     * @see #getTimeToDance()
      */
     protected int getTimeToObserve() {
 

@@ -58,7 +58,9 @@ public class SemanticEngine {
 					for (int j = 0; j < words.length; j++) {
 						line = line + words[j];
 
-						if (j != (words.length - 1)) line = line + ",";
+						if (j != (words.length - 1)) {
+							line = line + ",";
+						}
 					}
 
 					line = line + ";";
@@ -96,7 +98,8 @@ public class SemanticEngine {
 			// append words together
 			for (int j = 0; j < synWords.length; j++) {
 
-				if (!words.contains(synWords[j])) words.add(synWords[j]);
+				if (!words.contains(synWords[j]))
+					words.add(synWords[j]);
 			}
 		}
 
