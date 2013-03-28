@@ -8,19 +8,22 @@ import com.github.beast.parser.ParserReuters;
 
 public class PageReuters extends Page {
 
-	String heading;
-
 	public PageReuters(URL url) {
 
 		super(url);
 		this.setURL(url);
+		this.setParser(new ParserReuters());
 	}
 
-	public Source parse() {
+	public void parse() {
 
-		ParserReuters parser = new ParserReuters();
-		parser.parsePage(this);
-
-		return this.getSource();
+		ParserReuters parser = (ParserReuters) getParser();
+		
+		setTitle(parser.parseTitle(this));		
+		setLinks(parser.parseLinks(this));
+		setPerex(parser.parsePerex(this));
+		setText(parser.parseText(this));
+		setLocation(parser.parseLocation(this));
+		setTimestamp(parser.parseTimestamp(this));
 	}
 }

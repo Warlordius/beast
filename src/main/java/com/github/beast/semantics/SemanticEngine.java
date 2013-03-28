@@ -12,6 +12,12 @@ import edu.smu.tspell.wordnet.Synset;
 import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.WordNetDatabase;
 
+/**
+ * Semantics.
+ * 
+ * @author Štefan Sabo
+ * @version 1.0
+ */
 public class SemanticEngine {
 
 	private static WordNetDatabase database;

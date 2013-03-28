@@ -5,40 +5,38 @@ import java.net.URL;
 import java.util.*;
 
 import com.github.beast.page.*;
-import com.github.beast.utility.Utility;
+import com.github.beast.util.Utility;
 
 import net.htmlparser.jericho.*;
 
 public class Parser {
 
-	public Source parsePage(Page page) {
+	public void parsePage(Page page) {
 
-		page.title = parseTitle(page);
-		page.setContent(parseContent(page));
-		page.links = parseLinks(page);
-
-		return page.getSource();
+			
 	}
 
 	public String parseTitle(Page page) {
 
-		Element title = page.getSource().getFirstElement("title");
+		Source source = new Source(page.getCode());
+		Element title = source.getFirstElement("title");
 		return title.getContent().toString().trim();
 	}
 
 	public StringBuffer parseContent(Page page) {
 
-		StringBuffer content = new StringBuffer(page.getSource().toString());
+		StringBuffer content = new StringBuffer(page.getCode());
 		return content;
 	}
 
 	// parse all links
 	public List<Link> parseLinks(Page page) {
 
-		List<Element> elements = page.getSource().getAllElements("a ");
+		Source source = new Source(page.getCode());
+		List<Element> elements = source.getAllElements("a ");
 		List<Link> links = new LinkedList<Link>();
 		Iterator<Element> itr = elements.iterator();
-		String hostUrl = page.url.getProtocol() + "://" + page.url.getHost();
+		String hostUrl = page.getUrl().getProtocol() + "://" + page.getUrl().getHost();
 		URL url = null;
 		Link newLink;
 		Element element;

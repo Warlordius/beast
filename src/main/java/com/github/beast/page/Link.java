@@ -57,7 +57,7 @@ public class Link {
 	 * @param newUrl url of the link
 	 * @see URL
 	 */
-	public Link(final String newAnchorText, final URL newUrl) {
+	public Link(final String anchorText, final URL url) {
 
 		this.setAnchorText(anchorText);
 		this.setUrl(url);
@@ -72,10 +72,10 @@ public class Link {
 	 *         constructed using <i>newUrl</i> parameter
 	 * @see URL
 	 */
-	public Link(final String newAnchorText, final String newUrl) throws MalformedURLException {
+	public Link(final String anchorText, final String url) throws MalformedURLException {
 
-		this.setAnchorText(newAnchorText);
-		this.setUrl(new URL(newUrl));
+		this.setAnchorText(anchorText);
+		this.setUrl(new URL(url));
 	}
 
 	/**

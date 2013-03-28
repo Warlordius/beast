@@ -10,7 +10,7 @@ import com.github.beast.crawler.Crawler;
 import com.github.beast.index.BeastIndex;
 import com.github.beast.semantics.SemanticEngine;
 import com.github.beast.tagger.Tagger;
-import com.github.beast.utility.Configuration;
+import com.github.beast.util.Configuration;
 
 public class Beast {
 
@@ -26,11 +26,10 @@ public class Beast {
 
 	public static void main(String[] args) {
 
-		System.setProperty("wordnet.database.dir", config.getWordnetDir());	// wordnet
-																			// setup
-		Config.LoggerProvider = LoggerProvider.DISABLED;			// neo4j logging setup
+		System.setProperty("wordnet.database.dir", config.getWordnetDir());	// wordnet setup
+		Config.LoggerProvider = LoggerProvider.DISABLED;					// neo4j logging setup
 
-		runHarvestToday(50, 10000);
+		runHarvestToday(50, 200);
 	}
 
 	public static void log(final String string) {
@@ -44,16 +43,16 @@ public class Beast {
 				fw.append(now.toString() + " " + string);
 				fw.append(System.getProperty("line.separator"));
 				fw.close();
-			} catch (Exception e) {
-				System.err.println(e.getMessage());
-				System.err.println(e.getStackTrace());
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(1);
 			}
 		}
 	}
 
 	public static void runHarvestToday(final int bees, final int iters) {
 
-		final String experimentLocation = config.getResourceDir() + "_experiment_data/";
+		final String experimentLocation = config.getMainDir() + "_experiment_data/";
 
 		Calendar today = Calendar.getInstance();
 		String semIndicator;

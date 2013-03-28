@@ -1,4 +1,4 @@
-package com.github.beast.utility;
+package com.github.beast.util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,25 +23,27 @@ public final class Configuration {
 	// default property values, all need to be string because of property parser
 	private static final String DEFAULT_LOGGING = "true";
 	private static final String DEFAULT_SEMANTICS = "true";
-	private static final String DEFAULT_RESOURCE_DIR = "C:\\_beast_data\\";
+	private static final String DEFAULT_PAGE_ARCHIVE = "true";
+	private static final String DEFAULT_MAIN_DIR = "C:\\_beast_data\\";
 	private static final String DEFAULT_DATABASE_DIR = "C:\\_beast_data\\graph\\";
 	private static final String DEFAULT_LOG_FILE = "C:\\_beast_data\\log.txt\\";
+	private static final String DEFAULT_PAGE_ARCHIVE_DIR = "C:\\_beast_data\\pages\\";
 	private static final String DEFAULT_WORDNET_LOCATION = "C:\\Program Files (x86)\\Wordnet\\2.1\\dict\\";
 	private static final String DEFAULT_BEE_MESSAGES = "false";
-	private static final String DEFAULT_BEE_ADD_THRESHOLD = "0.3";
 	private static final String DEFAULT_REFRESH_DELAY = "1800000";
 	private static final String DEFAULT_PROPERTIES_FILE = ".properties";
 
 	// property names
 	private static final String LOGGING = "use_logging";
 	private static final String SEMANTICS = "use_semantics";
-	private static final String RESOURCE_DIR = "resource_dir";
+	private static final String PAGE_ARCHIVE = "use_page_archive";
+	private static final String MAIN_DIR = "main_dir";
 	private static final String DATABASE_DIR = "database_dir";
 	private static final String WORDNET_LOCATION = "wordnet_dir";
 	private static final String LOG_FILE = "log_file";
 	private static final String BEE_MESSAGES = "bee_messages";
-	private static final String BEE_ADD_THRESHOLD = "bee_add_threshold";
 	private static final String REFRESH_DELAY = "bee_refresh_delay";
+	private static final String PAGE_ARCHIVE_DIR = "page_archive_dir";
 
 	private static Configuration instance;
 
@@ -49,11 +51,23 @@ public final class Configuration {
 	private boolean semantics;
 	private boolean beeMessages;
 	private int refreshDelay;
-	private double beeAddThreshold;
 	private String databaseDir;
 	private String logFile;
 	private String resourceDir;
 	private String wordnetDir;
+
+	/**
+	 * Determines the directory for archiving of downloaded pages, if enabled by
+	 * setting {@link #pageArchive} to <i>true</i>.
+	 */
+	private String pageArchiveDir;
+
+	/**
+	 * Boolean value indicating the use of page archiving. If page archiving is
+	 * enabled, content of the downloaded pages is stored locally for future
+	 * reference in a folder determined by {@link #pageArchiveDir}.
+	 */
+	private boolean pageArchive;
 
 	/**
 	 * Class constructor, reads config file at the default location and sets
@@ -112,43 +126,78 @@ public final class Configuration {
 	}
 
 	/**
-	 * @return 
+	 * @return path to directory where database is stored
 	 */
-	private double getBeeAddThreshold() {
-
-		return beeAddThreshold;
-	}
-
 	public String getDatabaseDir() {
 
 		return databaseDir;
 	}
 
+	/**
+	 * @return path to the log file
+	 */
 	public String getLogFile() {
 
 		return logFile;
 	}
 
-	public String getResourceDir() {
+	/**
+	 * @return path to the main folder where results from runs are stored
+	 */
+	public String getMainDir() {
 
 		return resourceDir;
 	}
 
+	/**
+	 * @return path to the directory of Wordnet dictionary
+	 */
 	public String getWordnetDir() {
 
 		return wordnetDir;
 	}
 
+	/**
+	 * @return path to the directory where text of crawled articles is stored
+	 *         for future reference
+	 */
+	public String getPageArchiveDir() {
+
+		return pageArchiveDir;
+	}
+
+	/**
+	 * @return boolean value indicating the use of logging, <i>true</i> for
+	 *         logging enabled, otherwise <i>false</i>
+	 */
 	public boolean useLogging() {
 
 		return logging;
 	}
 
+	/**
+	 * @return <i>true</i> if page archiving is enabled, otherwise <i>false</i>.
+	 */
+	public boolean usePageArchive() {
+
+		return pageArchive;
+	}
+
+	/**
+	 * @return boolean value indicating the use of semantics when evaluating
+	 *         documents, <i>true</i> for semantics enabled, otherwise
+	 *         <i>false</i>
+	 * @see com.github.beast.semantics.SemanticEngine SemanticEngine
+	 */
 	public boolean useSemantics() {
 
 		return semantics;
 	}
 
+	/**
+	 * @return boolean value indicating the verbose mode of bee agents,
+	 *         <i>true</i> for enabled verbose mode, othervise <i>false</i>
+	 */
 	public boolean useBeeMessages() {
 
 		return beeMessages;
@@ -168,22 +217,22 @@ public final class Configuration {
 		try {
 			properties.load(new FileInputStream(path));
 		} catch (IOException e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.getStackTrace());
+			e.printStackTrace();
 			System.exit(1);
 		}
 
 		logging = Boolean.parseBoolean(properties.getProperty(LOGGING, DEFAULT_LOGGING));
 		semantics = Boolean.parseBoolean(properties.getProperty(SEMANTICS, DEFAULT_SEMANTICS));
 		beeMessages = Boolean.parseBoolean(properties.getProperty(BEE_MESSAGES, DEFAULT_BEE_MESSAGES));
-
+		pageArchive = Boolean.parseBoolean(properties.getProperty(PAGE_ARCHIVE, DEFAULT_PAGE_ARCHIVE));
+		
 		refreshDelay = Integer.parseInt(properties.getProperty(REFRESH_DELAY, DEFAULT_REFRESH_DELAY));
-		beeAddThreshold = Double.parseDouble(properties.getProperty(BEE_ADD_THRESHOLD, DEFAULT_BEE_ADD_THRESHOLD));
 
-		resourceDir = properties.getProperty(RESOURCE_DIR, DEFAULT_RESOURCE_DIR);
+		resourceDir = properties.getProperty(MAIN_DIR, DEFAULT_MAIN_DIR);
 		logFile = properties.getProperty(LOG_FILE, DEFAULT_LOG_FILE);
 		databaseDir = properties.getProperty(DATABASE_DIR, DEFAULT_DATABASE_DIR);
 		wordnetDir = properties.getProperty(WORDNET_LOCATION, DEFAULT_WORDNET_LOCATION);
 
+		pageArchiveDir = properties.getProperty(PAGE_ARCHIVE_DIR, DEFAULT_PAGE_ARCHIVE_DIR);
 	}
 }

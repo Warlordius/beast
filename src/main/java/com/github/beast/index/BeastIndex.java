@@ -21,7 +21,7 @@ import com.github.beast.Beast;
 import com.github.beast.page.Page;
 import com.github.beast.page.PageReuters;
 import com.github.beast.parser.ParserReuters;
-import com.github.beast.utility.Utility;
+import com.github.beast.util.Utility;
 
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
@@ -76,7 +76,7 @@ public class BeastIndex {
 
 		Transaction tx = graphDb.beginTx();
 		try {
-			Node node = allNodeIndex.get(PAGE_KEY, page.url.toString()).getSingle();
+			Node node = allNodeIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
 			Node keywordNode = getKeywordNode(keyword);
 
 			// if keyword is new, create it
@@ -120,8 +120,8 @@ public class BeastIndex {
 
 		Transaction tx = graphDb.beginTx();
 		try {
-			Node firstNode = pageIndex.get(PAGE_KEY, first.url.toString()).getSingle();
-			Node secondNode = pageIndex.get(PAGE_KEY, second.url.toString()).getSingle();
+			Node firstNode = pageIndex.get(PAGE_KEY, first.getUrl().toString()).getSingle();
+			Node secondNode = pageIndex.get(PAGE_KEY, second.getUrl().toString()).getSingle();
 
 			Iterator<Relationship> iter = firstNode.getRelationships(Rel.RELATED).iterator();
 
@@ -181,7 +181,7 @@ public class BeastIndex {
 	// get a random keyword of a given page
 	public double getKeywordRelevance(String keyword, Page page) {
 
-		Node node = pageIndex.get(PAGE_KEY, page.url.toString()).getSingle();
+		Node node = pageIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
 
 		if (node == null)
 			return 0;
@@ -204,9 +204,9 @@ public class BeastIndex {
 	// get a random keyword of a given page
 	public String getRandKeyword(Page page) {
 
-		Node node = pageIndex.get(PAGE_KEY, page.url.toString()).getSingle();
+		Node node = pageIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
 
-		ArrayList<String> keywords = Beast.tagger.getAllNouns(page.title);
+		ArrayList<String> keywords = Beast.tagger.getAllNouns(page.getTitle());
 
 		Iterator<Relationship> iter = node.getRelationships(Rel.KEYWORD).iterator();
 
@@ -234,11 +234,11 @@ public class BeastIndex {
 		Random generator = new Random();
 		ArrayList<Relationship> relArray = new ArrayList<Relationship>();
 
-		if (!containsUrl(page.url, allNodeIndex)) {
+		if (!containsUrl(page.getUrl(), allNodeIndex)) {
 			return null;
 		}
 
-		node = allNodeIndex.get(PAGE_KEY, page.url.toString()).getSingle();
+		node = allNodeIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
 		// iter = node.getRelationships(Rel.LINK).iterator();
 
 		for (Relationship rel : node.getRelationships(Rel.LINK)) {
@@ -285,7 +285,7 @@ public class BeastIndex {
 
 		// find out if node already exists
 		// if we found a page and its already indexed, we return the page
-		IndexHits<Node> resultIndexed = pageIndex.get(PAGE_KEY, page.url.toString());
+		IndexHits<Node> resultIndexed = pageIndex.get(PAGE_KEY, page.getUrl().toString());
 		if (resultIndexed.size() > 0) {
 			newPage = resultIndexed.next();
 			resultIndexed.close();
@@ -295,7 +295,7 @@ public class BeastIndex {
 
 		// otherwise if we found a node that's not yet fully indexed, we update
 		// the page we have found
-		IndexHits<Node> result = allNodeIndex.get(PAGE_KEY, page.url.toString());
+		IndexHits<Node> result = allNodeIndex.get(PAGE_KEY, page.getUrl().toString());
 		if (result.size() > 0) {
 			newPage = result.next();
 			result.close();
@@ -309,56 +309,60 @@ public class BeastIndex {
 			}
 
 			// try to process page, if not yet processed
-			if (!page.process())
+			try {
+				page.process();
+			} catch (NullPointerException e) {
+				System.err.println("Failed to process page: " + page.getUrl());
 				return null;
+			}				
 
-			System.out.println("index - " + page.url);
-			page.lastIndexed = new Date();
-			newPage.setProperty(PAGE_KEY, page.url.toString());
+			System.out.println("index - " + page.getUrl());
+			page.setLastIndexed(new Date());
+			newPage.setProperty(PAGE_KEY, page.getUrl().toString());
 			newPage.setProperty(PAGE_INDEXED, true);
 
-			if (page.file != null)
-				newPage.setProperty(PAGE_PATH, page.file.getAbsolutePath());
-			if (page.title != null)
-				newPage.setProperty(PAGE_TITLE, page.title);
-			if (page.location != null)
-				newPage.setProperty(PAGE_LOCATION, page.location);
-			if (page.timestamp != null)
-				newPage.setProperty(PAGE_TIMESTAMP, page.timestamp.toString());
-			if (page.lastIndexed != null)
-				newPage.setProperty(PAGE_LASTINDEX, page.lastIndexed.toString());
-			if (page.text != null)
-				newPage.setProperty(PAGE_TEXT, page.text.toString());
-			if (page.perex != null)
-				newPage.setProperty(PAGE_PEREX, page.perex.toString());
+			if (page.getArchiveFile() != null)
+				newPage.setProperty(PAGE_PATH, page.getArchiveFile().getAbsolutePath());
+			if (page.getTitle() != null)
+				newPage.setProperty(PAGE_TITLE, page.getTitle());
+			if (page.getLocation() != null)
+				newPage.setProperty(PAGE_LOCATION, page.getLocation());
+			if (page.getTimestamp() != null)
+				newPage.setProperty(PAGE_TIMESTAMP, page.getTimestamp().toString());
+			if (page.getLastIndexed() != null)
+				newPage.setProperty(PAGE_LASTINDEX, page.getLastIndexed().toString());
+			if (page.getText() != null)
+				newPage.setProperty(PAGE_TEXT, page.getText().toString());
+			if (page.getPerex() != null)
+				newPage.setProperty(PAGE_PEREX, page.getPerex().toString());
 
 			// EXPERIMENTAL
-			if (page.timestamp != null) {
-				double timemilis = page.timestamp.getTime();
+			if (page.getTimestamp() != null) {
+				double timemilis = page.getTimestamp().getTime();
 				newPage.setProperty(PAGE_TIME, timemilis);
 			}
 
 			// add outgoing links within the page as nonindexed nodes
-			for (int i = 0; i < page.links.size(); i++) {
+			for (int i = 0; i < page.getLinks().size(); i++) {
 
 				Node linkedPage;
 
-				if (containsUrl(page.links.get(i).getUrl(), allNodeIndex)) {
-					linkedPage = allNodeIndex.get(PAGE_KEY, page.links.get(i).getUrl()).getSingle();
+				if (containsUrl(page.getLinks().get(i).getUrl(), allNodeIndex)) {
+					linkedPage = allNodeIndex.get(PAGE_KEY, page.getLinks().get(i).getUrl()).getSingle();
 				} else {
 					linkedPage = graphDb.createNode();
-					linkedPage.setProperty(PAGE_KEY, page.links.get(i).getUrl().toString());
+					linkedPage.setProperty(PAGE_KEY, page.getLinks().get(i).getUrl().toString());
 					linkedPage.setProperty(PAGE_INDEXED, false);
-					allNodeIndex.add(linkedPage, PAGE_KEY, page.links.get(i).getUrl());
+					allNodeIndex.add(linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl());
 				}
 				Relationship relation = newPage.createRelationshipTo(linkedPage, Rel.LINK);
-				relation.setProperty(ANCHOR_TEXT, page.links.get(i).getAnchorText());
+				relation.setProperty(ANCHOR_TEXT, page.getLinks().get(i).getAnchorText());
 			}
 
-			if ((nodeIsNew) && (!containsUrl(page.url, allNodeIndex)))
-				allNodeIndex.add(newPage, PAGE_KEY, page.url.toString());
+			if ((nodeIsNew) && (!containsUrl(page.getUrl(), allNodeIndex)))
+				allNodeIndex.add(newPage, PAGE_KEY, page.getUrl().toString());
 
-			pageIndex.add(newPage, PAGE_KEY, page.url.toString());
+			pageIndex.add(newPage, PAGE_KEY, page.getUrl().toString());
 
 			tx.success();
 
@@ -392,7 +396,7 @@ public class BeastIndex {
 		keywords = graphDb.index().forNodes("keywords");
 		registerShutdownHook(graphDb);
 		indexStartingPages();
-
+				
 		System.out.println("index running");
 		// listKeywords(keywords);
 		// listNodes(pageIndex, "output.txt");
@@ -534,8 +538,7 @@ public class BeastIndex {
 			url = Utility.stringToURL(node.getProperty(PAGE_KEY).toString());
 			page = new PageReuters(url);
 		} catch (MalformedURLException e) {
-			System.err.println(e.getMessage());
-			System.err.println(e.getStackTrace());
+			e.printStackTrace();
 			System.exit(1);
 		}
 				
@@ -548,24 +551,24 @@ public class BeastIndex {
 		}
 		if (node.hasProperty(PAGE_PATH)) {
 			File newFile = new File(node.getProperty(PAGE_PATH).toString());
-			page.file = newFile;
+			page.setFile(newFile);
 		}
 		if (node.hasProperty(PAGE_TITLE)) {
-			page.title = node.getProperty(PAGE_TITLE).toString();
+			page.setTitle(node.getProperty(PAGE_TITLE).toString());
 		}
 		if (node.hasProperty(PAGE_LOCATION)) {
-			page.location = node.getProperty(PAGE_LOCATION).toString();
+			page.setLocation(node.getProperty(PAGE_LOCATION).toString());
 		}
 		if (node.hasProperty(PAGE_TEXT)) {
-			page.text = new StringBuffer(node.getProperty(PAGE_TEXT).toString());
+			page.setText(new StringBuffer(node.getProperty(PAGE_TEXT).toString()));
 		}
 		if (node.hasProperty(PAGE_PEREX)) {
-			page.perex = new StringBuffer(node.getProperty(PAGE_PEREX).toString());
+			page.setPerex(new StringBuffer(node.getProperty(PAGE_PEREX).toString()));
 		}
 		if (node.hasProperty(PAGE_LASTINDEX)) {
 			try {
 				DateFormat format = new SimpleDateFormat(DEFAULT_DATE_FORMAT, Locale.ENGLISH);
-				page.lastIndexed = format.parse(node.getProperty(PAGE_LASTINDEX).toString());
+				page.setLastIndexed(format.parse(node.getProperty(PAGE_LASTINDEX).toString()));
 			} catch (ParseException e) {
 				System.out.println("Wrong date format: " + e);
 			}
@@ -573,7 +576,7 @@ public class BeastIndex {
 		if (node.hasProperty(PAGE_TIMESTAMP)) {
 			try {
 				DateFormat format = new SimpleDateFormat(DEFAULT_DATE_FORMAT, Locale.ENGLISH);
-				page.timestamp = format.parse(node.getProperty(PAGE_TIMESTAMP).toString());
+				page.setTimestamp(format.parse(node.getProperty(PAGE_TIMESTAMP).toString()));
 			} catch (ParseException e) {
 				System.out.println("Wrong date format: " + e);
 			}
@@ -603,14 +606,12 @@ public class BeastIndex {
 		Node newPage = null;
 
 		// if page is not yet indexed properly, index it normally
-		IndexHits<Node> resultIndexed = pageIndex.get(PAGE_KEY, page.url.toString());
+		IndexHits<Node> resultIndexed = pageIndex.get(PAGE_KEY, page.getUrl().toString());
 		if (resultIndexed.size() == 0) {
 			resultIndexed.close();
 			newPage = indexPage(page);
 			return newPage;
-		}
-		// otherwise use it for reindexing
-		else {
+		} else { 							// otherwise use it for reindexing
 			newPage = resultIndexed.next();
 			resultIndexed.close();
 		}
@@ -618,36 +619,39 @@ public class BeastIndex {
 		Transaction tx = graphDb.beginTx();
 
 		try {
-			System.out.println("update - " + page.url);
-			page.lastIndexed = new Date();
-			newPage.setProperty(PAGE_KEY, page.url.toString());
+			System.out.println("update - " + page.getUrl());
+			page.setLastIndexed(new Date());
+			newPage.setProperty(PAGE_KEY, page.getUrl().toString());
 			newPage.setProperty(PAGE_INDEXED, true);
 
 			// try to process page, if not yet processed
-			if (!page.process(Page.REPROCESS)) {
+			try {
+				page.process(Page.REPROCESS);
+			} catch (NullPointerException e) {
+				System.err.println("Failed to process page: " + page.getUrl());
 				return null;
 			}
 
-			if (page.text != null) {
-				newPage.setProperty(PAGE_TEXT, page.text.toString());
+			if (page.getText() != null) {
+				newPage.setProperty(PAGE_TEXT, page.getText().toString());
 			}
-			if (page.perex != null) {
-				newPage.setProperty(PAGE_PEREX, page.perex.toString());
+			if (page.getPerex() != null) {
+				newPage.setProperty(PAGE_PEREX, page.getPerex().toString());
 			}
-			if (page.file != null) {
-				newPage.setProperty(PAGE_PATH, page.file.getAbsolutePath());
+			if (page.getArchiveFile() != null) {
+				newPage.setProperty(PAGE_PATH, page.getArchiveFile().getAbsolutePath());
 			}
-			if (page.title != null) {
-				newPage.setProperty(PAGE_TITLE, page.title);
+			if (page.getTitle() != null) {
+				newPage.setProperty(PAGE_TITLE, page.getTitle());
 			}
-			if (page.location != null) {
-				newPage.setProperty(PAGE_LOCATION, page.location);
+			if (page.getLocation() != null) {
+				newPage.setProperty(PAGE_LOCATION, page.getLocation());
 			}
-			if (page.timestamp != null) {
-				newPage.setProperty(PAGE_TIMESTAMP, page.timestamp.toString());
+			if (page.getTimestamp() != null) {
+				newPage.setProperty(PAGE_TIMESTAMP, page.getTimestamp().toString());
 			}
-			if (page.lastIndexed != null) {
-				newPage.setProperty(PAGE_LASTINDEX, page.lastIndexed.toString());
+			if (page.getLastIndexed() != null) {
+				newPage.setProperty(PAGE_LASTINDEX, page.getLastIndexed().toString());
 			}
 
 			// remove all old outgoing links first
@@ -663,20 +667,20 @@ public class BeastIndex {
 			}
 
 			// update links
-			for (int i = 0; i < page.links.size(); i++) {
+			for (int i = 0; i < page.getLinks().size(); i++) {
 
 				Node linkedPage;
-				if (containsUrl(page.links.get(i).getUrl(), allNodeIndex)) {
-					linkedPage = allNodeIndex.get(PAGE_KEY, page.links.get(i).getUrl()).getSingle();
+				if (containsUrl(page.getLinks().get(i).getUrl(), allNodeIndex)) {
+					linkedPage = allNodeIndex.get(PAGE_KEY, page.getLinks().get(i).getUrl()).getSingle();
 				} else {
 					linkedPage = graphDb.createNode();
-					linkedPage.setProperty(PAGE_KEY, page.links.get(i).getUrl().toString());
+					linkedPage.setProperty(PAGE_KEY, page.getLinks().get(i).getUrl().toString());
 					linkedPage.setProperty(PAGE_INDEXED, false);
 				}
 
 				Relationship relation = newPage.createRelationshipTo(linkedPage, Rel.LINK);
-				relation.setProperty(ANCHOR_TEXT, page.links.get(i).getAnchorText());
-				allNodeIndex.add(linkedPage, PAGE_KEY, page.links.get(i).getUrl());
+				relation.setProperty(ANCHOR_TEXT, page.getLinks().get(i).getAnchorText());
+				allNodeIndex.add(linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl());
 			}
 
 			tx.success();
@@ -722,18 +726,18 @@ public class BeastIndex {
 
 		PageReuters newPage;
 		ArrayList<String> links = ParserReuters.getStartingPages();
-
-		for (String link : links) {			
+		
+		for (String link : links) {	
 			try {
-    			newPage = new PageReuters(Utility.stringToURL(link));
-    			if (!containsUrl(newPage.url, allNodeIndex)) {
+				newPage = new PageReuters(Utility.stringToURL(link));
+    			if (!containsUrl(newPage.getUrl(), allNodeIndex)) {
     				newPage.process();
     				indexPage(newPage);
-    			}
+    			}    			
 			} catch (MalformedURLException e) {
 				System.err.println("Malformed URL: " + link);
 			}			
-		}		
+		}			
 	}
 
 	/**

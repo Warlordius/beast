@@ -29,7 +29,7 @@ public class NewsBee extends Bee {
 		this.keyword = crawler.index.getRandKeyword(source);
 
 		if (Beast.config.useBeeMessages()) {
-			System.out.println("Init: " + source.title + " --- " + keyword);
+			System.out.println("Init: " + source.getTitle() + " --- " + keyword);
 		}
 	}
 
@@ -72,12 +72,13 @@ public class NewsBee extends Bee {
 	 */
 	protected double evalSourceQuality(final Page page, final String keyword) {
 
-		final int GRANULARITY = 1000;
+		final int granularity = 1000;
 
 		int maxPoints = 0;
 		int recPoints = 0;
 
 		ArrayList<String> lookups;
+
 		if (Beast.config.useSemantics()) {
 
 			lookups = Beast.semEngine.getSynonyms(keyword);
@@ -85,9 +86,7 @@ public class NewsBee extends Bee {
 			for (int i = 0; i < lookups.size(); i++) {
 				lookups.set(i, lookups.get(i).toLowerCase());
 			}
-		}
-
-		else {
+		} else {
 			lookups = new ArrayList<String>();
 			lookups.add(keyword.toLowerCase());
 		}
@@ -98,37 +97,37 @@ public class NewsBee extends Bee {
 			Beast.crawler.index.indexPage(page);
 		}
 
-		maxPoints = (int) Math.ceil(page.text.length() / GRANULARITY);
+		maxPoints = (int) Math.ceil(page.getText().length() / granularity);
 
 		if (maxPoints > 0) {
 			// careful not to exceed the end of string
 			for (int i = 0; i < maxPoints - 1; i++) {
-				String subString = page.text.substring(i * GRANULARITY, (i + 1) * GRANULARITY);
+				String subString = page.getText().substring(i * granularity, (i + 1) * granularity);
 				if (subString.toLowerCase().contains(keywordInLow)) {
 					recPoints = recPoints + 1;
 				}
 			}
 
 			// final part of string that contains <= GRANULARITY chars
-			String subString = page.text.substring((maxPoints - 1) * GRANULARITY);
+			String subString = page.getText().substring((maxPoints - 1) * granularity);
 
 			if (subString.toLowerCase().contains(keywordInLow)) {
 				recPoints = recPoints + 1;
 			}
 
 			// increase for perex
-			if ((page.perex != null) && (page.perex.length() > 0)) {
+			if ((page.getPerex() != null) && (page.getPerex().length() > 0)) {
 				maxPoints = maxPoints + 2;
-				if (page.perex.toString().toLowerCase().contains(keywordInLow)) {
+				if (page.getPerex().toString().toLowerCase().contains(keywordInLow)) {
 					recPoints = recPoints + 2;
 				}
 			}
 		}
 
 		// increase for title
-		if ((page.title != null) && (!page.title.isEmpty())) {
+		if ((page.getTitle() != null) && (!page.getTitle().isEmpty())) {
 			maxPoints = maxPoints + 5;
-			if (page.title.toLowerCase().contains(keywordInLow)) {
+			if (page.getTitle().toLowerCase().contains(keywordInLow)) {
 				recPoints = recPoints + 5;
 			}
 		}
@@ -171,37 +170,41 @@ public class NewsBee extends Bee {
 	protected void doWhileForaging() {
 
 		Calendar now = Calendar.getInstance();
-		long timeSinceRefresh = now.getTimeInMillis() - source.lastIndexed.getTime();
+		long timeSinceRefresh = now.getTimeInMillis() - source.getLastIndexed().getTime();
 
 		if (Beast.config.useBeeMessages()) {
-			System.out.println("Foraging: " + source.url.toString() + ", keyword: " + keyword);
+			System.out.println("Foraging: " + source.getUrl().toString() + ", keyword: " + keyword);
 		}
 
 		// process the source first, if not processed yet. if processing
 		// fails, leave immediatelly
 		if (!source.isProcessed()) {
 
-			if (!source.process()) {
-				// desire = 0;
+			try {
+				source.process();
+			} catch (NullPointerException e) {
+				System.err.println("Failed to process page: " + source.getUrl());
+				desire = 0;
 				return;
 			}
-
-			Beast.log("new source found: " + source.timestamp.toString() + " " + source.url.toString());
+			Beast.log("new source found: " + source.getTimestamp().toString() + " " + source.getUrl().toString());
 		}
 		quality = evalQuality(source, keyword);
 
 		// visit a neighbouring source
 		newSource = crawler.index.getRandNeighbour(source);
 		if (newSource == null) {
+			System.err.println("Failed to process page: " + source.getUrl());
 			desire = 0;
 			return;
 		}
 
 		// if source is sucessfully processed, index it, otherwise leave
 		if (!newSource.isIndexed()) {
-			if (newSource.process()) {
+			try {
+				newSource.process();
 				crawler.index.indexPage(newSource);
-			} else {
+			} catch (NullPointerException e) {
 				desire = 0;
 				return;
 			}
@@ -211,7 +214,7 @@ public class NewsBee extends Bee {
 		if ((source.isIndexed()) && (timeSinceRefresh > Beast.config.getRefreshDelay())) {
 			crawler.index.reindexPage(source);
 			quality = evalQuality(source, keyword);
-			Beast.log("source refreshed: " + source.timestamp.toString() + " " + quality + " " + source.url.toString());
+			Beast.log("source refreshed: " + source.getTimestamp().toString() + " " + quality + " " + source.getUrl().toString());
 		}
 
 		newQuality = evalQuality(newSource, keyword);
@@ -221,7 +224,7 @@ public class NewsBee extends Bee {
 	protected void doWhileObserving() {
 
 		if ((Beast.config.useBeeMessages()) && (source != null)) {
-			System.out.println("Observing: " + source.url.toString());
+			System.out.println("Observing: " + source.getUrl().toString());
 		}
 
 		source = null;
@@ -242,7 +245,7 @@ public class NewsBee extends Bee {
 	protected void doWhileDancing() {
 
 		if (Beast.config.useBeeMessages()) {
-			System.out.println("Dancing: " + source.url.toString() + " keyword: " + keyword);
+			System.out.println("Dancing: " + source.getUrl().toString() + " keyword: " + keyword);
 		}
 
 		if (firstDance) {
