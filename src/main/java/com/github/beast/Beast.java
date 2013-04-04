@@ -8,6 +8,8 @@ import net.htmlparser.jericho.LoggerProvider;
 
 import com.github.beast.crawler.Crawler;
 import com.github.beast.index.BeastIndex;
+import com.github.beast.parser.Parser;
+import com.github.beast.parser.ReutersParser;
 import com.github.beast.semantics.SemanticEngine;
 import com.github.beast.tagger.Tagger;
 import com.github.beast.util.Configuration;
@@ -23,9 +25,9 @@ public class Beast {
 	public static SemanticEngine semEngine = new SemanticEngine();
 
 	// public static Tagger tagger;
-
+	
 	public static void main(String[] args) {
-
+		
 		System.setProperty("wordnet.database.dir", config.getWordnetDir());	// wordnet setup
 		Config.LoggerProvider = LoggerProvider.DISABLED;					// neo4j logging setup
 

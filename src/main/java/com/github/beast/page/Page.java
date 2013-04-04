@@ -1,19 +1,22 @@
 package com.github.beast.page;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.net.URL;
 import java.util.Date;
 import java.util.List;
 
-import com.github.beast.Beast;
 import com.github.beast.parser.Parser;
-import com.github.beast.util.Configuration;
 import com.github.beast.util.Utility;
 
 /**
- * Abstract class representing a single web page in Beast project.
+ * Represents a single web page identified by its {@link URL}. The URL needs to
+ * be supplied at the construction of the Page.
+ * <p>
+ * Initialized Page holds only the URL. The HTML code of the Page is obtained
+ * through calling {@link #getCode()} for the first time. In order to extract
+ * outgoing links and fields such as {@link #title}, the {@link #parse()} method
+ * needs to be called. Parsing of the Page is handled by appropriate {@link Parser},
+ * assigned to the Page at construction.
  * 
  * @author Štefan Sabo
  * @version 1.0
@@ -35,9 +38,6 @@ public class Page {
 	/** The title of the web page. */
 	private String title;
 
-	/** Location field extracted from the article content of the page. */
-	private String location;
-
 	/** Last time the page has been indexed. */
 	private Date lastIndexed;
 
@@ -48,18 +48,9 @@ public class Page {
 	 */
 	private Date lastProcessed;
 
-	/** Timestamp field extracted from the article content of the page. */
-	private Date timestamp;
-
 	/** List of outgoing {@link Link links} from the page. */
 	private List<Link> links;
 
-	/** Article text extracted from the page HTML code. */
-	private StringBuffer text;
-
-	/** First paragraph of the article extracted from the page HTML code. */
-	private StringBuffer perex;
-	
 	/** HTML code of the page. */
 	private StringBuffer code;
 
@@ -76,7 +67,8 @@ public class Page {
 	private Parser parser;
 
 	/**
-	 * Creates a new Page from a valid {@link URL}.
+	 * Creates a new Page from a valid {@link URL} and assigns a new
+	 * {@link Parser}, that will be used to process the code of the page.
 	 * 
 	 * @param url the url of the created page, serves as an identifier of the
 	 *        page and is used for future refreshing of the page
@@ -84,41 +76,7 @@ public class Page {
 	public Page(final URL url) {
 
 		setURL(url);
-		setParser(new Parser());
-	}
-
-	/**
-	 * Writes the content of a page to a archiveFile. Currently only the article
-	 * text is stored from a page, other parts are omitted. The archiveFile is
-	 * named according to the page title, replacing all illegal characters with
-	 * blanks.
-	 * 
-	 * @param page the page to be writen to a archiveFile
-	 * @return reference to the created archiveFile
-	 */
-	public static File writeToFile(final Page page) {
-
-		final String fileExtension = "html";
-
-		if (!page.isProcessed()) {
-			page.process();
-		}
-
-		String path = new String(Beast.config.getPageArchiveDir());
-		String filename = page.getTitle().replaceAll("[\\/|:*?<>\"]", " ").trim() + "." + fileExtension;
-		File pageFile = new File(path, filename);
-		FileWriter writer;
-
-		try {
-			writer = new FileWriter(pageFile);
-			writer.append(page.getText());
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-
-		return pageFile;
+		setParser(Parser.getInstance());
 	}
 
 	/**
@@ -201,38 +159,6 @@ public class Page {
 	}
 
 	/**
-	 * @return the location field of the page
-	 */
-	public String getLocation() {
-
-		return location;
-	}
-
-	/**
-	 * @return the {@link #perex} of the page
-	 */
-	public StringBuffer getPerex() {
-
-		return perex;
-	}
-
-	/**
-	 * @return the {@link #text} content of the page
-	 */
-	public StringBuffer getText() {
-
-		return text;
-	}
-
-	/**
-	 * @return the {@link #timestamp} field of the page
-	 */
-	public Date getTimestamp() {
-
-		return timestamp;
-	}
-
-	/**
 	 * @return the title of the page
 	 */
 	public String getTitle() {
@@ -273,11 +199,11 @@ public class Page {
 	 */
 	public void parse() {
 
-		parse(parser);
+		parse(this.parser);
 	}
 
 	/**
-	 * Parser the content of the page using supplied {@link Parser}, extracting
+	 * Parse the content of the page using supplied {@link Parser}, extracting
 	 * {@link #title} and {@link #links} from the HTML code of the page.
 	 * 
 	 * @param parser the {@link Parser} used to process the page
@@ -302,9 +228,8 @@ public class Page {
 
 	/**
 	 * Attempts to process a page. The processing consists of retrieving the
-	 * code of the page, if not yet available, parsing the content and
-	 * optionally archiving the page, if archiving is enabled in
-	 * {@link Configuration}.
+	 * code of the page if not yet available and parsing the content of the
+	 * page.
 	 * 
 	 * @param reprocess if <i>true</i>, forces reprocessing of the page, even if
 	 *        it has been processed before. If <i>false</i> page will be
@@ -329,10 +254,6 @@ public class Page {
 
 		this.setProcessed(true);
 		this.setLastProcessed(new Date());
-
-		if (Configuration.getInstance().usePageArchive()) {
-			this.setFile(writeToFile(this));
-		}
 	}
 
 	/**
@@ -349,7 +270,7 @@ public class Page {
 	 * @param archiveFile the file containing the archived version of the page
 	 * @see #archiveFile
 	 */
-	public void setFile(final File archiveFile) {
+	public void setArchiveFile(final File archiveFile) {
 
 		this.archiveFile = archiveFile;
 	}
@@ -386,38 +307,6 @@ public class Page {
 	public void setLinks(final List<Link> links) {
 
 		this.links = links;
-	}
-
-	/**
-	 * @param location the new location field of the page
-	 */
-	public void setLocation(final String location) {
-
-		this.location = location;
-	}
-
-	/**
-	 * @param perex the new {@link #perex} of the page
-	 */
-	public void setPerex(final StringBuffer perex) {
-
-		this.perex = perex;
-	}
-
-	/**
-	 * @param text new {@link #text} content of the page
-	 */
-	public void setText(final StringBuffer text) {
-
-		this.text = text;
-	}
-
-	/**
-	 * @param timestamp the new {@link #timestamp} of the page
-	 */
-	public void setTimestamp(final Date timestamp) {
-
-		this.timestamp = timestamp;
 	}
 
 	/**

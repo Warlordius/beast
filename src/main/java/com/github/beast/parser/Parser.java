@@ -2,99 +2,109 @@ package com.github.beast.parser;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
 
-import com.github.beast.page.*;
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.Segment;
+import net.htmlparser.jericho.Source;
+
+import com.github.beast.page.Link;
+import com.github.beast.page.Page;
 import com.github.beast.util.Utility;
 
-import net.htmlparser.jericho.*;
-
+/**
+ * A singleton class representing a parser to extract information from a HTML
+ * document. The parsing engine provided by Jericho Parser. <code>Parser</code>
+ * provides general <i>title</i> and <i>link</i> extracting capabilities and may
+ * be used for any HTML document.
+ * 
+ * @author Štefan Sabo
+ * @version 1.0
+ * 
+ *          TODO: link to Jericho
+ * @see Jericho
+ */
 public class Parser {
 
-	public void parsePage(Page page) {
+	/** Instance of a singleton class. */
+	private static Parser instance;
 
-			
+	/**
+	 * Constructor of the <code>Parser</code> class. Is private because
+	 * <code>Parser</code> is a singleton class.
+	 */
+	protected Parser() {
+
 	}
 
-	public String parseTitle(Page page) {
+	/**
+	 * Returns instance of the <code>Parser</code> singleton class. If no
+	 * instance exists, new instance is created.
+	 * 
+	 * @return instance of the singleton class
+	 */
+	public static Parser getInstance() {
 
-		Source source = new Source(page.getCode());
-		Element title = source.getFirstElement("title");
-		return title.getContent().toString().trim();
-	}
-
-	public StringBuffer parseContent(Page page) {
-
-		StringBuffer content = new StringBuffer(page.getCode());
-		return content;
-	}
-
-	// parse all links
-	public List<Link> parseLinks(Page page) {
-
-		Source source = new Source(page.getCode());
-		List<Element> elements = source.getAllElements("a ");
-		List<Link> links = new LinkedList<Link>();
-		Iterator<Element> itr = elements.iterator();
-		String hostUrl = page.getUrl().getProtocol() + "://" + page.getUrl().getHost();
-		URL url = null;
-		Link newLink;
-		Element element;
-		String anchorText;
-		String urlText;
-
-		while (itr.hasNext()) {
-			element = itr.next();
-			anchorText = element.getContent().toString();
-			urlText = element.getStartTag().getAttributeValue("href");
-
-			if (urlText != null) {
-				if (urlText.startsWith("/")) {
-					urlText = hostUrl + urlText;
-				}
-
-				try {
-					url = Utility.stringToURL(urlText);
-					newLink = new Link(anchorText, url);
-					links.add(newLink);
-				} catch (MalformedURLException e) {
-					System.err.println("Malformed URL: " + urlText);
-				}
-			}
+		if (instance == null) {
+			instance = new Parser();
 		}
+		return instance;
+	}
+
+	/**
+	 * Extracts all HTML {@link Link links} from a given {@link Page}. All
+	 * relative links are changed to absolute and protocol is prefixed in order
+	 * to obtain valid absolute URLs.
+	 * 
+	 * @param page the page to be processed
+	 * @return list of outgoing links in the processed page
+	 * @see #parseLinks(Segment)
+	 */
+	public List<Link> parseLinks(final Page page) {
+
+		Source source = new Source(page.getCode());
+		String hostUrl = page.getUrl().getProtocol() + "://" + page.getUrl().getHost();
+		List<Link> links = parseLinks(source, hostUrl);
 
 		return links;
 	}
 
-	// TODO: fix duplicate code with previous method
-	// parse links with a given host url
+	/**
+	 * Extracts all HTML {@link Link links} from a given {@link Segment} of a
+	 * page. All relative links are changed to absolute and protocol is prefixed
+	 * in order to obtain valid absolute URLs.
+	 * 
+	 * @param segment the segment of a HTML document to be processed
+	 * @param hostUrl the URL of containing document, needed in order to handle
+	 *        relative links
+	 * @return list of outgoing links in the processed segment
+	 */
 	public List<Link> parseLinks(final Segment segment, final String hostUrl) {
 
 		List<Link> links = new LinkedList<Link>();
-		Element element;
 		String anchorText;
 		String urlText;
 		URL url = null;
+		List<Element> elements;
 
 		if (segment == null) {
 			return links;
+		} else {
+			elements = segment.getAllElements("a ");
 		}
 
-		List<Element> elements = segment.getAllElements("a ");
+		for (Element element : elements) {
 
-		Iterator<Element> itr = elements.iterator();
-
-		while (itr.hasNext()) {
-			element = itr.next();
 			anchorText = element.getContent().toString();
 			urlText = element.getStartTag().getAttributeValue("href");
 
 			if (urlText != null) {
-				
+
 				if (urlText.startsWith("/")) {
 					urlText = hostUrl + urlText;
 				}
-				
+
 				try {
 					url = Utility.stringToURL(urlText);
 					Link newLink = new Link(anchorText, url);
@@ -105,5 +115,18 @@ public class Parser {
 			}
 		}
 		return links;
+	}
+
+	/**
+	 * Extracts a <i>title</i> attribute of the given {@link Page}.
+	 * 
+	 * @param page the page to be processed
+	 * @return the title of the given page
+	 */
+	public String parseTitle(final Page page) {
+
+		Source source = new Source(page.getCode());
+		Element title = source.getFirstElement("title");
+		return title.getContent().toString().trim();
 	}
 }

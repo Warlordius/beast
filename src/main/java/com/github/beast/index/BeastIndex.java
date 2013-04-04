@@ -18,9 +18,12 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
 import com.github.beast.Beast;
+import com.github.beast.page.ArticlePage;
+import com.github.beast.page.Link;
 import com.github.beast.page.Page;
-import com.github.beast.page.PageReuters;
-import com.github.beast.parser.ParserReuters;
+import com.github.beast.page.ReutersPage;
+import com.github.beast.parser.ReutersParser;
+import com.github.beast.util.Configuration;
 import com.github.beast.util.Utility;
 
 import com.tinkerpop.blueprints.Graph;
@@ -219,7 +222,7 @@ public class BeastIndex {
 		Random generator = new Random();
 		String keyword = keywords.get(generator.nextInt(keywords.size()));
 
-		if (Beast.config.useSemantics()) {
+		if (Configuration.getInstance().useSemantics()) {
 			return Beast.semEngine.getRootNoun(keyword);
 		} else {
 			return keyword;
@@ -278,7 +281,7 @@ public class BeastIndex {
 	 * @param page - page to be indexed.
 	 * @return Indexed page as a Node in graph database.
 	 */
-	public Node indexPage(final Page page) {
+	public Node indexPage(final ArticlePage page) {
 
 		Node newPage = null;
 		boolean nodeIsNew = true;
@@ -377,7 +380,7 @@ public class BeastIndex {
 	 */
 	public void init() {
 
-		init(Beast.config.getDatabaseDir());
+		init(Configuration.getInstance().getDatabaseDir());
 	}
 
 	/**
@@ -529,14 +532,14 @@ public class BeastIndex {
 	}
 
 	// retrieve a page object from a given node
-	public Page pageFromNode(final Node node) {
+	public ArticlePage pageFromNode(final Node node) {
 
 		URL url;
-		Page page = null;
+		ArticlePage page = null;
 		
 		try {
 			url = Utility.stringToURL(node.getProperty(PAGE_KEY).toString());
-			page = new PageReuters(url);
+			page = new ReutersPage(url);
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -551,7 +554,7 @@ public class BeastIndex {
 		}
 		if (node.hasProperty(PAGE_PATH)) {
 			File newFile = new File(node.getProperty(PAGE_PATH).toString());
-			page.setFile(newFile);
+			page.setArchiveFile(newFile);
 		}
 		if (node.hasProperty(PAGE_TITLE)) {
 			page.setTitle(node.getProperty(PAGE_TITLE).toString());
@@ -601,7 +604,7 @@ public class BeastIndex {
 	 * @param page - Page to be reindexed.
 	 * @return Indexed page as a Node in graph database.
 	 */
-	public Node reindexPage(final Page page) {
+	public Node reindexPage(final ArticlePage page) {
 
 		Node newPage = null;
 
@@ -724,19 +727,15 @@ public class BeastIndex {
 	 */
 	private void indexStartingPages() {
 
-		PageReuters newPage;
-		ArrayList<String> links = ParserReuters.getStartingPages();
+		ReutersPage newPage;
+		List<Link> links = ReutersParser.getInstance().getStartingPages();
 		
-		for (String link : links) {	
-			try {
-				newPage = new PageReuters(Utility.stringToURL(link));
-    			if (!containsUrl(newPage.getUrl(), allNodeIndex)) {
-    				newPage.process();
-    				indexPage(newPage);
-    			}    			
-			} catch (MalformedURLException e) {
-				System.err.println("Malformed URL: " + link);
-			}			
+		for (Link link : links) {	
+			newPage = new ReutersPage(link.getUrl());
+    		if (!containsUrl(newPage.getUrl(), allNodeIndex)) {
+    			newPage.process();
+    			indexPage(newPage);
+    		}		
 		}			
 	}
 

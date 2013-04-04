@@ -110,10 +110,10 @@ public final class Configuration {
 	public static Configuration getInstance(final String path) {
 
 		if (instance == null) {
-			return new Configuration(path);
-		} else {
-			return instance;
-		}
+			instance = new Configuration(path);
+		} 
+
+		return instance;
 	}
 
 	/**

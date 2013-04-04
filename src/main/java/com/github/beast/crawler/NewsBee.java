@@ -5,7 +5,9 @@ import java.util.Calendar;
 import java.util.Random;
 
 import com.github.beast.Beast;
+import com.github.beast.page.ArticlePage;
 import com.github.beast.page.Page;
+import com.github.beast.util.Configuration;
 
 /**
  * NewsBee extends the {@link Bee} class, representing a specialized agent for
@@ -20,15 +22,20 @@ import com.github.beast.page.Page;
 public class NewsBee extends Bee {
 
 	private double newQuality;
-	private Page newSource;
+	private ArticlePage newSource;
+	private ArticlePage source;
 	private String keyword;
 
 	public NewsBee(Crawler crawler) {
 
 		super(crawler);
+		
+		// TODO: fix relationship between super and local source fields
+		source = (ArticlePage) super.source;
+		
 		this.keyword = crawler.index.getRandKeyword(source);
 
-		if (Beast.config.useBeeMessages()) {
+		if (Configuration.getInstance().useBeeMessages()) {
 			System.out.println("Init: " + source.getTitle() + " --- " + keyword);
 		}
 	}
@@ -50,7 +57,7 @@ public class NewsBee extends Bee {
 	 * @return A double representing the relevance of the given page to the
 	 *         given keyword.
 	 */
-	protected double evalQuality(final Page page, final String keyword) {
+	protected double evalQuality(final ArticlePage page, final String keyword) {
 
 		// evaluate the quality of keyword considering only the page
 		double pageQuality = evalSourceQuality(page, keyword);
@@ -70,7 +77,7 @@ public class NewsBee extends Bee {
 	 * @return A double representing the relevance of the given page to the
 	 *         given keyword.
 	 */
-	protected double evalSourceQuality(final Page page, final String keyword) {
+	protected double evalSourceQuality(final ArticlePage page, final String keyword) {
 
 		final int granularity = 1000;
 
@@ -79,7 +86,7 @@ public class NewsBee extends Bee {
 
 		ArrayList<String> lookups;
 
-		if (Beast.config.useSemantics()) {
+		if (Configuration.getInstance().useSemantics()) {
 
 			lookups = Beast.semEngine.getSynonyms(keyword);
 
@@ -152,7 +159,7 @@ public class NewsBee extends Bee {
 	 * @return A double representing the relevance of the given page to the
 	 *         given keyword.
 	 */
-	protected double evalSurroundQuality(final Page page, final String keyword) {
+	protected double evalSurroundQuality(final ArticlePage page, final String keyword) {
 
 		Double relevance = crawler.index.getKeywordRelevance(keyword, page);
 		return relevance;
@@ -172,7 +179,7 @@ public class NewsBee extends Bee {
 		Calendar now = Calendar.getInstance();
 		long timeSinceRefresh = now.getTimeInMillis() - source.getLastIndexed().getTime();
 
-		if (Beast.config.useBeeMessages()) {
+		if (Configuration.getInstance().useBeeMessages()) {
 			System.out.println("Foraging: " + source.getUrl().toString() + ", keyword: " + keyword);
 		}
 
@@ -192,7 +199,7 @@ public class NewsBee extends Bee {
 		quality = evalQuality(source, keyword);
 
 		// visit a neighbouring source
-		newSource = crawler.index.getRandNeighbour(source);
+		newSource = (ArticlePage) crawler.index.getRandNeighbour(source);
 		if (newSource == null) {
 			System.err.println("Failed to process page: " + source.getUrl());
 			desire = 0;
@@ -211,7 +218,7 @@ public class NewsBee extends Bee {
 		}
 
 		// if source is old enough, reindex it anew
-		if ((source.isIndexed()) && (timeSinceRefresh > Beast.config.getRefreshDelay())) {
+		if ((source.isIndexed()) && (timeSinceRefresh > Configuration.getInstance().getRefreshDelay())) {
 			crawler.index.reindexPage(source);
 			quality = evalQuality(source, keyword);
 			Beast.log("source refreshed: " + source.getTimestamp().toString() + " " + quality + " " + source.getUrl().toString());
@@ -223,7 +230,7 @@ public class NewsBee extends Bee {
 
 	protected void doWhileObserving() {
 
-		if ((Beast.config.useBeeMessages()) && (source != null)) {
+		if ((Configuration.getInstance().useBeeMessages()) && (source != null)) {
 			System.out.println("Observing: " + source.getUrl().toString());
 		}
 
@@ -244,7 +251,7 @@ public class NewsBee extends Bee {
 
 	protected void doWhileDancing() {
 
-		if (Beast.config.useBeeMessages()) {
+		if (Configuration.getInstance().useBeeMessages()) {
 			System.out.println("Dancing: " + source.getUrl().toString() + " keyword: " + keyword);
 		}
 
@@ -256,7 +263,7 @@ public class NewsBee extends Bee {
 		}
 	}
 
-	protected void follow(Bee bee) {
+	protected void follow(NewsBee bee) {
 
 		if (bee.status == Status.DANCING) {
 			this.status = Status.FORAGING;
@@ -267,7 +274,7 @@ public class NewsBee extends Bee {
 
 	public void dispatch() {
 
-		source = crawler.randomSource();
+		source = (ArticlePage) crawler.randomSource();
 		keyword = crawler.index.getRandKeyword(source);
 		status = Status.FORAGING;
 	}

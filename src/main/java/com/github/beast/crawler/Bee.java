@@ -2,6 +2,7 @@ package com.github.beast.crawler;
 
 import java.util.Random;
 
+import com.github.beast.page.ArticlePage;
 import com.github.beast.page.Page;
 
 /**

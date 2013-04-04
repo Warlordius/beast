@@ -53,8 +53,8 @@ public class Link {
 	/**
 	 * Creates a {@link Link} with a given anchor text and url.
 	 * 
-	 * @param newAnchorText anchor text of the link
-	 * @param newUrl url of the link
+	 * @param anchorText anchor text of the link
+	 * @param url url of the link
 	 * @see URL
 	 */
 	public Link(final String anchorText, final URL url) {
@@ -66,8 +66,8 @@ public class Link {
 	/**
 	 * Creates a {@link Link} with a given anchor text and url.
 	 * 
-	 * @param newAnchorText anchor text of the link
-	 * @param newUrl url of the link
+	 * @param anchorText anchor text of the link
+	 * @param url url of the link
 	 * @throws MalformedURLException is thrown if a valid URL cannot be
 	 *         constructed using <i>newUrl</i> parameter
 	 * @see URL
