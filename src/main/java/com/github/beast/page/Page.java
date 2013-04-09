@@ -250,8 +250,7 @@ public class Page {
 			code = getCode();
 		}
 
-		parse();
-
+		this.parse();
 		this.setProcessed(true);
 		this.setLastProcessed(new Date());
 	}

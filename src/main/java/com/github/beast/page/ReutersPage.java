@@ -38,16 +38,6 @@ public class ReutersPage extends ArticlePage {
 
 		parse(getParser());
 	}
-
-	// TODO: fix
-	
-	public void process() {
-		super.process();
-	}
-	
-	public void process(boolean a) {
-		super.process(a);
-	}
 	
 	/**
 	 * Parse the content of the page using supplied {@link ReutersParser}.
