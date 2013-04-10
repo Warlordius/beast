@@ -26,19 +26,19 @@ public class Crawler {
 	this.index = index;
     }
 
-    public int beesAtSource(Page page) {
-
-	Iterator<Bee> itr = bees.iterator();
-	int count = 0;
-
-	while (itr.hasNext()) {
-	    if (itr.next().source == page) {
-		count++;
-	    }
-	}
-
-	return count;
-    }
+//    public int beesAtSource(Page page) {
+//
+//	Iterator<Bee> itr = bees.iterator();
+//	int count = 0;
+//
+//	while (itr.hasNext()) {
+//	    if (itr.next().getSource() == page) {
+//		count++;
+//	    }
+//	}
+//
+//	return count;
+//    }
 
     public void doCrawl() {
 
@@ -52,9 +52,9 @@ public class Crawler {
 
     public void doCrawl(int beeNum, int iterations) {
 
-	init(beeNum);
+		init(beeNum);
 
-	if (ANNOUNCE) System.out.println("Crawling...");
+		if (ANNOUNCE) System.out.println("Crawling...");
 
 	// crawl body
 	for (int i = 0; i < iterations; i++) {

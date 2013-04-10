@@ -22,8 +22,7 @@ import com.github.beast.util.Utility;
  * @author Štefan Sabo
  * @version 1.0
  * 
- *          TODO: link to Jericho
- * @see Jericho
+ * @see <a href="http://jerichohtml.sourceforge.net">Jericho parser</a>
  */
 public class Parser {
 
@@ -80,7 +79,7 @@ public class Parser {
 	 *        relative links
 	 * @return list of outgoing links in the processed segment
 	 */
-	public List<Link> parseLinks(final Segment segment, final String hostUrl) {
+	protected List<Link> parseLinks(final Segment segment, final String hostUrl) {
 
 		List<Link> links = new LinkedList<Link>();
 		String anchorText;

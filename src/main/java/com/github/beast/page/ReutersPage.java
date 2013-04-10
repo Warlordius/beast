@@ -36,7 +36,7 @@ public class ReutersPage extends ArticlePage {
 	 */
 	public void parse() {
 
-		parse(getParser());
+		parse((ReutersParser) getParser());
 	}
 	
 	/**

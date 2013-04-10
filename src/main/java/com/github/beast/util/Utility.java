@@ -111,7 +111,6 @@ public abstract class Utility {
 			reader.close();
 
 		} catch (IOException e) {
-			e.printStackTrace();
 			throw new NullPointerException();
 		}
 

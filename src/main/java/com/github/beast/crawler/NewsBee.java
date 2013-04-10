@@ -23,15 +23,11 @@ public class NewsBee extends Bee {
 
 	private double newQuality;
 	private ArticlePage newSource;
-	private ArticlePage source;
 	private String keyword;
 
 	public NewsBee(Crawler crawler) {
 
 		super(crawler);
-		
-		// TODO: fix relationship between super and local source fields
-		source = (ArticlePage) super.source;
 		
 		this.keyword = crawler.index.getRandKeyword(source);
 
@@ -178,7 +174,8 @@ public class NewsBee extends Bee {
 
 		Calendar now = Calendar.getInstance();
 		long timeSinceRefresh = now.getTimeInMillis() - source.getLastIndexed().getTime();
-
+		ArticlePage sourceArticle = (ArticlePage) source;
+		
 		if (Configuration.getInstance().useBeeMessages()) {
 			System.out.println("Foraging: " + source.getUrl().toString() + ", keyword: " + keyword);
 		}
@@ -194,9 +191,9 @@ public class NewsBee extends Bee {
 				desire = 0;
 				return;
 			}
-			Beast.log("new source found: " + source.getTimestamp().toString() + " " + source.getUrl().toString());
+			Beast.log("new source found: " + sourceArticle.getTimestamp().toString() + " " + source.getUrl().toString());
 		}
-		quality = evalQuality(source, keyword);
+		quality = evalQuality(sourceArticle, keyword);
 
 		// visit a neighbouring source
 		newSource = (ArticlePage) crawler.index.getRandNeighbour(source);
@@ -219,9 +216,9 @@ public class NewsBee extends Bee {
 
 		// if source is old enough, reindex it anew
 		if ((source.isIndexed()) && (timeSinceRefresh > Configuration.getInstance().getRefreshDelay())) {
-			crawler.index.reindexPage(source);
-			quality = evalQuality(source, keyword);
-			Beast.log("source refreshed: " + source.getTimestamp().toString() + " " + quality + " " + source.getUrl().toString());
+			crawler.index.reindexPage(sourceArticle);
+			quality = evalQuality(sourceArticle, keyword);
+			Beast.log("source refreshed: " + sourceArticle.getTimestamp().toString() + " " + quality + " " + source.getUrl().toString());
 		}
 
 		newQuality = evalQuality(newSource, keyword);

@@ -1,7 +1,6 @@
 package com.github.beast.parser;
 
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -20,7 +19,26 @@ import net.htmlparser.jericho.Segment;
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.TextExtractor;
 
-public class ReutersParser extends Parser {
+/**
+ * Singleton class representing a {@link Parser} for Reuters web pages. In
+ * addition to standard <code>Parser</code> class, ability to extract timestamp,
+ * location and perex of a page are added, through new methods
+ * <ul>
+ * <li>{@link #parseTimestamp(ReutersPage)}</li>
+ * <li>{@link #parseLocation(ReutersPage)}</li>
+ * <li>{@link #parsePerex(ReutersPage)}</li>
+ * </ul>
+ * Furthermore, extraction of title is suited for Reuters pages, overriding
+ * {@link #parseTitle(ReutersPage)}, so that only the title of article is
+ * extracted, omitting other text. Link extraction through {@link
+ * parseLinks(ReutersPage)} is changed, so that links are extracted only from
+ * specific parts of a page, in order to avoid following links not leading to
+ * articles.
+ * 
+ * @author Štefan Sabo
+ * @version 1.0
+ */
+public final class ReutersParser extends Parser {
 
 	private static final String HOMEPAGE = "http://www.reuters.com";
 
@@ -83,7 +101,7 @@ public class ReutersParser extends Parser {
 	 * @param page the reuters page to be processed
 	 * @return list of outgoing links to articles in the processed page
 	 */
-	public List<Link> parseLinks(final Page page) {
+	public List<Link> parseLinks(final ReutersPage page) {
 
 		Source source = new Source(page.getCode());
 		List<Link> linksRelated = parseLinks(source.getElementById("relatedNews"), HOMEPAGE);
@@ -118,20 +136,20 @@ public class ReutersParser extends Parser {
 	 * @return list of outgoing links pointing to articles in the processed
 	 *         segment
 	 */
-	public List<Link> parseLinks(final Segment segment, final String hostUrl) {
+	protected List<Link> parseLinks(final Segment segment, final String hostUrl) {
 
 		Link link;
 		List<Link> links = new LinkedList<Link>();
 		links = super.parseLinks(segment, hostUrl);
 		String urlText;
 		Iterator<Link> iter = links.iterator();
-		
+
 		while (iter.hasNext()) {
 			link = iter.next();
 			urlText = link.getUrl().toString();
 			if (!(urlText.contains("article/")) && !(urlText.contains("places"))) {
 				iter.remove();
-			}			
+			}
 		}
 		return links;
 	}
@@ -259,7 +277,7 @@ public class ReutersParser extends Parser {
 		Source source = new Source(page.getCode());
 		Element titleElement = source.getFirstElement("title");
 		String title = titleElement.getContent().toString();
-		
+
 		int pos = title.lastIndexOf('|');
 		if (pos > 0) {
 			title = title.substring(0, pos);
@@ -268,39 +286,8 @@ public class ReutersParser extends Parser {
 	}
 
 	/**
-	 * Processes a link and returns a valid full URL string prefixed with
-	 * protocol.
-	 * 
-	 * @param link the link to be processed
-	 * @param page the page from which the link has been extracted.
-	 * @return Cleaned up version of url string ready to be processed.
-	 */
-	private String _cleanLink(final String link, final Page page) {
-		
-		String hostUrl = page.getUrl().getProtocol() + "://" + page.getUrl().getHost();
-		String cleanLink;
-		URL linkUrl;
-		
-		if ((link == null) || (link.contains("?videoId"))) {
-			return null;
-		}
-		if (link.startsWith("/")) {
-			cleanLink = hostUrl + link;
-		} else {
-			cleanLink = link;
-		}
-		try {
-			linkUrl = Utility.stringToURL(cleanLink);
-			return linkUrl.toString();
-		} catch (MalformedURLException e) {
-			System.err.println("Malformed URL " + link);
-			return null;
-		}
-	}
-
-	/**
-	 * Extracts articles making the latest headlines from a page (currently,
-	 * reuters type is assumed), that are used as a starting point for search
+	 * Extracts articles making the latest headlines from a Reuters page that
+	 * are used as a starting point for search.
 	 * 
 	 * @param page - page where links of latest headlines are expected to be
 	 *        found
@@ -313,7 +300,7 @@ public class ReutersParser extends Parser {
 		Element bigStoryElement = source.getElementById("topStoryNuclear");
 		Element headlineElement = source.getElementById("latestHeadlines");
 		String hostUrl = page.getUrl().getHost();
-		
+
 		List<Link> links;
 		List<Link> topLinks;
 
@@ -323,14 +310,13 @@ public class ReutersParser extends Parser {
 			links = parseLinks(bigStoryElement, hostUrl);
 			return links;
 		}
-		
+
 		links = parseLinks(topStoryElement, hostUrl);
 		topLinks = parseLinks(headlineElement, hostUrl);
-		
+
 		if (topLinks.size() > 0) {
 			links.addAll(topLinks);
 		}
-		
 		return links;
 	}
 }

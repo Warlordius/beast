@@ -32,7 +32,8 @@ public final class Configuration {
 	private static final String DEFAULT_BEE_MESSAGES = "false";
 	private static final String DEFAULT_REFRESH_DELAY = "1800000";
 	private static final String DEFAULT_PROPERTIES_FILE = ".properties";
-
+	private static final String DEFAULT_TAGGER_PATH = "tagger\\english-left3words-distsim.tagger";
+	
 	// property names
 	private static final String LOGGING = "use_logging";
 	private static final String SEMANTICS = "use_semantics";
@@ -44,6 +45,7 @@ public final class Configuration {
 	private static final String BEE_MESSAGES = "bee_messages";
 	private static final String REFRESH_DELAY = "bee_refresh_delay";
 	private static final String PAGE_ARCHIVE_DIR = "page_archive_dir";
+	private static final String TAGGER_PATH = "tagger_path";
 
 	private static Configuration instance;
 
@@ -55,6 +57,7 @@ public final class Configuration {
 	private String logFile;
 	private String resourceDir;
 	private String wordnetDir;
+	private String taggerPath;
 
 	/**
 	 * Determines the directory for archiving of downloaded pages, if enabled by
@@ -158,6 +161,14 @@ public final class Configuration {
 	}
 
 	/**
+	 * @return path to the tagger dictionary
+	 */
+	public String getTaggerPath() {
+		
+		return taggerPath;
+	}
+	
+	/**
 	 * @return path to the directory where text of crawled articles is stored
 	 *         for future reference
 	 */
@@ -232,7 +243,7 @@ public final class Configuration {
 		logFile = properties.getProperty(LOG_FILE, DEFAULT_LOG_FILE);
 		databaseDir = properties.getProperty(DATABASE_DIR, DEFAULT_DATABASE_DIR);
 		wordnetDir = properties.getProperty(WORDNET_LOCATION, DEFAULT_WORDNET_LOCATION);
-
 		pageArchiveDir = properties.getProperty(PAGE_ARCHIVE_DIR, DEFAULT_PAGE_ARCHIVE_DIR);
+		taggerPath = properties.getProperty(TAGGER_PATH, DEFAULT_TAGGER_PATH);
 	}
 }
