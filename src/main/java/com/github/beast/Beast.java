@@ -29,7 +29,7 @@ public class Beast {
 		System.setProperty("wordnet.database.dir", config.getWordnetDir());	// wordnet setup
 		Config.LoggerProvider = LoggerProvider.DISABLED;					// neo4j logging setup
 
-		runHarvestToday(50, 101);
+		runHarvestToday(50, 100);
 	}
 
 	public static void log(final String string) {

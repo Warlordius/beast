@@ -9,10 +9,15 @@ import com.github.beast.util.Configuration;
 import edu.stanford.nlp.tagger.maxent.MaxentTagger;
 
 /**
- * Tagger. Stanford
+ * Part of speech tagger. Utilizes Stanford Log-linear Part-Of-Speech Tagger,
+ * which needs to be installed beforehand. Path to tagger dictionary is
+ * determined through {@link Configuration}. Currently only the extraction of
+ * nouns is supported.
  * 
  * @author Štefan Sabo
- * @see 1.0
+ * @version 1.0
+ * @see <a href="http://nlp.stanford.edu/software/tagger.shtml">Stanford
+ 		Tagger</a>
  */
 public class Tagger {
 
@@ -44,30 +49,40 @@ public class Tagger {
 	 */
 	public String getRandomNoun(final String input) {
 
-		String taggedString = tagger.tagString(input);
-		//String[] tokens = taggedString.split(" ");
-		ArrayList<String> nouns = new ArrayList<String>();
-
-		for (String token : taggedString.split(" ")) {
-			if (token.contains("_NN")) {
-				nouns.add(token.substring(0, token.indexOf('_')));
-			}
-		}
-		
+		ArrayList<String> nouns = getAllNouns(input);
 		Random generator = new Random();
 		return nouns.get(generator.nextInt(nouns.size()));
 	}
 
+	/**
+	 * Extract word from a token with assigned part of speech tags, effectively
+	 * removing the part of speech mark, added by {@link #tagger}.
+	 * 
+	 * @param token word labeled by appropriate part of speech tag (e.g.
+	 *        <i>house_NN</i>)
+	 * @return word without part of speech tag (e.g. <i>house</i>)
+	 */
+	public static String getWordFromToken(final String token) {
+
+		char tokenSeparator = '_';
+		return token.substring(0, token.indexOf(tokenSeparator));
+	}
+
+	/**
+	 * Returns a list of all nouns in a string representing text.
+	 * 
+	 * @param input the text to be processed
+	 * @return list of all nouns in the text
+	 */
 	public ArrayList<String> getAllNouns(final String input) {
 
+		String nounString = "_NN";
 		String taggedString = tagger.tagString(input);
-		String[] tokens = taggedString.split(" ");
 		ArrayList<String> nouns = new ArrayList<String>();
 
-		for (int i = 0; i < tokens.length; i++) {
-			if (tokens[i].contains("_NN")) {
-				int pos = tokens[i].indexOf('_');
-				nouns.add(tokens[i].substring(0, pos));
+		for (String token : taggedString.split(" ")) {
+			if (token.contains(nounString)) {
+				nouns.add(getWordFromToken(token));
 			}
 		}
 		return nouns;
