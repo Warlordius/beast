@@ -33,7 +33,7 @@ public final class Configuration {
 	private static final String DEFAULT_REFRESH_DELAY = "1800000";
 	private static final String DEFAULT_PROPERTIES_FILE = ".properties";
 	private static final String DEFAULT_TAGGER_PATH = "tagger\\english-left3words-distsim.tagger";
-	
+
 	// property names
 	private static final String LOGGING = "use_logging";
 	private static final String SEMANTICS = "use_semantics";
@@ -114,18 +114,9 @@ public final class Configuration {
 
 		if (instance == null) {
 			instance = new Configuration(path);
-		} 
+		}
 
 		return instance;
-	}
-
-	/**
-	 * 
-	 * @return delay between refreshing a page, in milliseconds
-	 */
-	public int getRefreshDelay() {
-
-		return refreshDelay;
 	}
 
 	/**
@@ -153,6 +144,32 @@ public final class Configuration {
 	}
 
 	/**
+	 * @return path to the directory where text of crawled articles is stored
+	 *         for future reference
+	 */
+	public String getPageArchiveDir() {
+
+		return pageArchiveDir;
+	}
+
+	/**
+	 * 
+	 * @return delay between refreshing a page, in milliseconds
+	 */
+	public int getRefreshDelay() {
+
+		return refreshDelay;
+	}
+
+	/**
+	 * @return path to the tagger dictionary
+	 */
+	public String getTaggerPath() {
+
+		return taggerPath;
+	}
+
+	/**
 	 * @return path to the directory of Wordnet dictionary
 	 */
 	public String getWordnetDir() {
@@ -161,20 +178,12 @@ public final class Configuration {
 	}
 
 	/**
-	 * @return path to the tagger dictionary
+	 * @return boolean value indicating the verbose mode of bee agents,
+	 *         <i>true</i> for enabled verbose mode, othervise <i>false</i>
 	 */
-	public String getTaggerPath() {
-		
-		return taggerPath;
-	}
-	
-	/**
-	 * @return path to the directory where text of crawled articles is stored
-	 *         for future reference
-	 */
-	public String getPageArchiveDir() {
+	public boolean useBeeMessages() {
 
-		return pageArchiveDir;
+		return beeMessages;
 	}
 
 	/**
@@ -206,15 +215,6 @@ public final class Configuration {
 	}
 
 	/**
-	 * @return boolean value indicating the verbose mode of bee agents,
-	 *         <i>true</i> for enabled verbose mode, othervise <i>false</i>
-	 */
-	public boolean useBeeMessages() {
-
-		return beeMessages;
-	}
-
-	/**
 	 * Reads the specified config file and sets the values configuration
 	 * settings. If no value is found for a given setting, default value is
 	 * used. Exits if the specified file is not found.
@@ -236,7 +236,7 @@ public final class Configuration {
 		semantics = Boolean.parseBoolean(properties.getProperty(SEMANTICS, DEFAULT_SEMANTICS));
 		beeMessages = Boolean.parseBoolean(properties.getProperty(BEE_MESSAGES, DEFAULT_BEE_MESSAGES));
 		pageArchive = Boolean.parseBoolean(properties.getProperty(PAGE_ARCHIVE, DEFAULT_PAGE_ARCHIVE));
-		
+
 		refreshDelay = Integer.parseInt(properties.getProperty(REFRESH_DELAY, DEFAULT_REFRESH_DELAY));
 
 		resourceDir = properties.getProperty(MAIN_DIR, DEFAULT_MAIN_DIR);

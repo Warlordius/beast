@@ -25,18 +25,6 @@ public class Link {
 
 	/**
 	 * Creates a {@link Link} with a given url. Is equivalent to calling
-	 * <code>Link(String, URL)</code> with <code>null</code> as first parameter.
-	 * 
-	 * @param newUrl url of the link
-	 * @see URL
-	 */
-	public Link(final URL newUrl) {
-
-		new Link(null, newUrl);
-	}
-
-	/**
-	 * Creates a {@link Link} with a given url. Is equivalent to calling
 	 * <code>Link(String, String)</code> with <code>null</code> as first
 	 * parameter.
 	 * 
@@ -55,19 +43,6 @@ public class Link {
 	 * 
 	 * @param anchorText anchor text of the link
 	 * @param url url of the link
-	 * @see URL
-	 */
-	public Link(final String anchorText, final URL url) {
-
-		this.setAnchorText(anchorText);
-		this.setUrl(url);
-	}
-
-	/**
-	 * Creates a {@link Link} with a given anchor text and url.
-	 * 
-	 * @param anchorText anchor text of the link
-	 * @param url url of the link
 	 * @throws MalformedURLException is thrown if a valid URL cannot be
 	 *         constructed using <i>newUrl</i> parameter
 	 * @see URL
@@ -79,6 +54,31 @@ public class Link {
 	}
 
 	/**
+	 * Creates a {@link Link} with a given anchor text and url.
+	 * 
+	 * @param anchorText anchor text of the link
+	 * @param url url of the link
+	 * @see URL
+	 */
+	public Link(final String anchorText, final URL url) {
+
+		this.setAnchorText(anchorText);
+		this.setUrl(url);
+	}
+
+	/**
+	 * Creates a {@link Link} with a given url. Is equivalent to calling
+	 * <code>Link(String, URL)</code> with <code>null</code> as first parameter.
+	 * 
+	 * @param newUrl url of the link
+	 * @see URL
+	 */
+	public Link(final URL newUrl) {
+
+		new Link(null, newUrl);
+	}
+
+	/**
 	 * @return the anchor text of the link
 	 */
 	public String getAnchorText() {
@@ -87,19 +87,19 @@ public class Link {
 	}
 
 	/**
-	 * @param newAnchorText the new anchor text of the {@link Link}
-	 */
-	public void setAnchorText(final String newAnchorText) {
-
-		this.anchorText = newAnchorText;
-	}
-
-	/**
 	 * @return the url of the link
 	 */
 	public URL getUrl() {
 
 		return url;
+	}
+
+	/**
+	 * @param newAnchorText the new anchor text of the {@link Link}
+	 */
+	public void setAnchorText(final String newAnchorText) {
+
+		this.anchorText = newAnchorText;
 	}
 
 	/**

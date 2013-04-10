@@ -79,28 +79,7 @@ public class ArticlePage extends Page {
 			e.printStackTrace();
 			return null;
 		}
-
 		return pageFile;
-	}
-
-	/**
-	 * Attempts to process a page. The processing consists of retrieving the
-	 * code of the page if not yet available, parsing the content of the page
-	 * and optionally archiving the page, if archiving is enabled in
-	 * {@link Configuration}.
-	 * 
-	 * @param reprocess if <i>true</i>, forces reprocessing of the page, even if
-	 *        it has been processed before. If <i>false</i> page will be
-	 *        processed only once.
-	 * @throws NullPointerException if unable to retrieve the code of the page
-	 */
-	public void process(final boolean reprocess) throws NullPointerException {
-
-		super.process(reprocess);
-
-		if (Configuration.getInstance().usePageArchive()) {
-			this.setArchiveFile(writeToFile(this));
-		}
 	}
 
 	/**
@@ -133,6 +112,26 @@ public class ArticlePage extends Page {
 	public Date getTimestamp() {
 
 		return timestamp;
+	}
+
+	/**
+	 * Attempts to process a page. The processing consists of retrieving the
+	 * code of the page if not yet available, parsing the content of the page
+	 * and optionally archiving the page, if archiving is enabled in
+	 * {@link Configuration}.
+	 * 
+	 * @param reprocess if <i>true</i>, forces reprocessing of the page, even if
+	 *        it has been processed before. If <i>false</i> page will be
+	 *        processed only once.
+	 * @throws NullPointerException if unable to retrieve the code of the page
+	 */
+	public void process(final boolean reprocess) throws NullPointerException {
+
+		super.process(reprocess);
+
+		if (Configuration.getInstance().usePageArchive()) {
+			this.setArchiveFile(writeToFile(this));
+		}
 	}
 
 	/**

@@ -17,7 +17,7 @@ import edu.stanford.nlp.tagger.maxent.MaxentTagger;
  * @author Štefan Sabo
  * @version 1.0
  * @see <a href="http://nlp.stanford.edu/software/tagger.shtml">Stanford
- 		Tagger</a>
+ *      Tagger</a>
  */
 public class Tagger {
 

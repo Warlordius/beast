@@ -65,8 +65,20 @@ public class Parser {
 		Source source = new Source(page.getCode());
 		String hostUrl = page.getUrl().getProtocol() + "://" + page.getUrl().getHost();
 		List<Link> links = parseLinks(source, hostUrl);
-
 		return links;
+	}
+
+	/**
+	 * Extracts a <i>title</i> attribute of the given {@link Page}.
+	 * 
+	 * @param page the page to be processed
+	 * @return the title of the given page
+	 */
+	public String parseTitle(final Page page) {
+
+		Source source = new Source(page.getCode());
+		Element title = source.getFirstElement("title");
+		return title.getContent().toString().trim();
 	}
 
 	/**
@@ -114,18 +126,5 @@ public class Parser {
 			}
 		}
 		return links;
-	}
-
-	/**
-	 * Extracts a <i>title</i> attribute of the given {@link Page}.
-	 * 
-	 * @param page the page to be processed
-	 * @return the title of the given page
-	 */
-	public String parseTitle(final Page page) {
-
-		Source source = new Source(page.getCode());
-		Element title = source.getFirstElement("title");
-		return title.getContent().toString().trim();
 	}
 }

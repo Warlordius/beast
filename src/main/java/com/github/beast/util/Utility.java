@@ -21,6 +21,41 @@ public abstract class Utility {
 	private static final String DEFAULT_PROTOCOL = "http://";
 
 	/**
+	 * Fetches the HTML code of a given {@link Page page}, through HTTP request.
+	 * 
+	 * @param page the page, for which the code is to be fetched
+	 * @return HTML code of the given page
+	 * @throws NullPointerException if failed to obtain HTML code of the page
+	 */
+	public static StringBuffer requestCode(final Page page) throws NullPointerException {
+
+		String line;
+		URLConnection connection;
+		BufferedReader reader;
+		StringBuffer receivedCode = null;
+
+		try {
+			connection = page.getUrl().openConnection();
+			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			receivedCode = new StringBuffer();
+
+			while ((line = reader.readLine()) != null) {
+				receivedCode.append(line);
+			}
+			reader.close();
+
+		} catch (IOException e) {
+			throw new NullPointerException();
+		}
+
+		if (receivedCode.length() == 0) {
+			throw new NullPointerException();
+		}
+
+		return receivedCode;
+	}
+
+	/**
 	 * Creates an {@link URL} object from a {@link String}. Protocol prefix is
 	 * automatically added, however the <i>string</i> needs to be well-formed,
 	 * otherwise {@link MalformedURLException} is thrown.
@@ -84,40 +119,5 @@ public abstract class Utility {
 			}
 		}
 		return text;
-	}
-
-	/**
-	 * Fetches the HTML code of a given {@link Page page}, through HTTP request.
-	 * 
-	 * @param page the page, for which the code is to be fetched
-	 * @return HTML code of the given page
-	 * @throws NullPointerException if failed to obtain HTML code of the page
-	 */
-	public static StringBuffer requestCode(final Page page) throws NullPointerException {
-
-		String line;
-		URLConnection connection;
-		BufferedReader reader;
-		StringBuffer receivedCode = null;
-
-		try {
-			connection = page.getUrl().openConnection();
-			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			receivedCode = new StringBuffer();
-
-			while ((line = reader.readLine()) != null) {
-				receivedCode.append(line);
-			}
-			reader.close();
-
-		} catch (IOException e) {
-			throw new NullPointerException();
-		}
-
-		if (receivedCode.length() == 0) {
-			throw new NullPointerException();
-		}
-
-		return receivedCode;
 	}
 }

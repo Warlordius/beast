@@ -1,12 +1,21 @@
 package com.github.beast.index;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -49,18 +58,23 @@ public class BeastIndex {
 	private static final String REL_KEYWORD = "relationship_keyword";
 	private static final String REL_RELEVANCE = "relationship_relevance";
 
+	private static GraphDatabaseService graphDb;
 	private static Index<Node> keywords;
 	private static Index<Node> pageIndex;
-	private static GraphDatabaseService graphDb;
 	private static Index<Node> allNodeIndex;
 
-	private static enum Rel implements RelationshipType { // relationship
-		// definitions
+	/** Relationship type definitions. */
+	private static enum Rel implements RelationshipType {
+
 		KEYWORD, LINK, RELATED
 	}
 
-	// adds a hook to ensure correct shutdown of database in case of unexpected
-	// exit
+	/**
+	 * Adds hook to ensure correct shutdown of database in case of unexpected
+	 * exit.
+	 * 
+	 * @param graphDb graph database to add shutdown hook to
+	 */
 	private static void registerShutdownHook(final GraphDatabaseService graphDb) {
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -72,10 +86,8 @@ public class BeastIndex {
 		});
 	}
 
-	// public LinkedList<Page> pages;
-
-	// add a keyword to a given page
-	public void addKeyword(Page page, String keyword, double quality) {
+	// Add a keyword to a given page.
+	 public void addKeyword(Page page, String keyword, double quality) {
 
 		Transaction tx = graphDb.beginTx();
 		try {
@@ -317,7 +329,7 @@ public class BeastIndex {
 			} catch (NullPointerException e) {
 				System.err.println("Failed to process page: " + page.getUrl());
 				return null;
-			}				
+			}
 
 			System.out.println("index - " + page.getUrl());
 			page.setLastIndexed(new Date());
@@ -399,14 +411,14 @@ public class BeastIndex {
 		keywords = graphDb.index().forNodes("keywords");
 		registerShutdownHook(graphDb);
 		indexStartingPages();
-				
+
 		System.out.println("index running");
 		// listKeywords(keywords);
 		// listNodes(pageIndex, "output.txt");
 
 		Transaction tx = graphDb.beginTx();
 		try {
-			tx.success(); 
+			tx.success();
 		} finally {
 			tx.finish();
 		}
@@ -536,7 +548,7 @@ public class BeastIndex {
 
 		URL url;
 		ArticlePage page = null;
-		
+
 		try {
 			url = Utility.stringToURL(node.getProperty(PAGE_KEY).toString());
 			page = new ReutersPage(url);
@@ -544,7 +556,7 @@ public class BeastIndex {
 			e.printStackTrace();
 			System.exit(1);
 		}
-				
+
 		if (node.hasProperty(PAGE_INDEXED)) {
 			if (node.getProperty(PAGE_INDEXED).toString() == "true") {
 				page.setIndexed(true);
@@ -729,14 +741,14 @@ public class BeastIndex {
 
 		ReutersPage newPage;
 		List<Link> links = ReutersParser.getInstance().getStartingPages();
-		
-		for (Link link : links) {	
+
+		for (Link link : links) {
 			newPage = new ReutersPage(link.getUrl());
-    		if (!containsUrl(newPage.getUrl(), allNodeIndex)) {
-    			newPage.process();
-    			indexPage(newPage);
-    		}		
-		}			
+			if (!containsUrl(newPage.getUrl(), allNodeIndex)) {
+				newPage.process();
+				indexPage(newPage);
+			}
+		}
 	}
 
 	/**

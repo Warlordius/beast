@@ -121,40 +121,6 @@ public final class ReutersParser extends Parser {
 	}
 
 	/**
-	 * Extracts HTML {@link Link links} pointing to articles from a given
-	 * {@link Segment} of a page. All relative links are changed to absolute and
-	 * protocol is prefixed in order to obtain valid absolute URLs.
-	 * <p>
-	 * Extraction is based on {@link Parser#parseLinks(Segment, String)} method,
-	 * however all links not containing either string "<i>places</i>" or string
-	 * "<i>articles/</i>" are removed, as these do not generally point to text
-	 * articles in Reuters web page.
-	 * 
-	 * @param segment the segment of a HTML document to be processed
-	 * @param hostUrl the URL of containing document, needed in order to handle
-	 *        relative links
-	 * @return list of outgoing links pointing to articles in the processed
-	 *         segment
-	 */
-	protected List<Link> parseLinks(final Segment segment, final String hostUrl) {
-
-		Link link;
-		List<Link> links = new LinkedList<Link>();
-		links = super.parseLinks(segment, hostUrl);
-		String urlText;
-		Iterator<Link> iter = links.iterator();
-
-		while (iter.hasNext()) {
-			link = iter.next();
-			urlText = link.getUrl().toString();
-			if (!(urlText.contains("article/")) && !(urlText.contains("places"))) {
-				iter.remove();
-			}
-		}
-		return links;
-	}
-
-	/**
 	 * Attempts to extract <i>location</i> information from a
 	 * {@link ReutersPage}. Location refers to a text label at the start of the
 	 * article, naming the location relevant to the actual article (e.g.
@@ -283,6 +249,40 @@ public final class ReutersParser extends Parser {
 			title = title.substring(0, pos);
 		}
 		return title.trim();
+	}
+
+	/**
+	 * Extracts HTML {@link Link links} pointing to articles from a given
+	 * {@link Segment} of a page. All relative links are changed to absolute and
+	 * protocol is prefixed in order to obtain valid absolute URLs.
+	 * <p>
+	 * Extraction is based on {@link Parser#parseLinks(Segment, String)} method,
+	 * however all links not containing either string "<i>places</i>" or string
+	 * "<i>articles/</i>" are removed, as these do not generally point to text
+	 * articles in Reuters web page.
+	 * 
+	 * @param segment the segment of a HTML document to be processed
+	 * @param hostUrl the URL of containing document, needed in order to handle
+	 *        relative links
+	 * @return list of outgoing links pointing to articles in the processed
+	 *         segment
+	 */
+	protected List<Link> parseLinks(final Segment segment, final String hostUrl) {
+
+		Link link;
+		List<Link> links = new LinkedList<Link>();
+		links = super.parseLinks(segment, hostUrl);
+		String urlText;
+		Iterator<Link> iter = links.iterator();
+
+		while (iter.hasNext()) {
+			link = iter.next();
+			urlText = link.getUrl().toString();
+			if (!(urlText.contains("article/")) && !(urlText.contains("places"))) {
+				iter.remove();
+			}
+		}
+		return links;
 	}
 
 	/**

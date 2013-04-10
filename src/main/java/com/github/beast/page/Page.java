@@ -15,8 +15,8 @@ import com.github.beast.util.Utility;
  * Initialized Page holds only the URL. The HTML code of the Page is obtained
  * through calling {@link #getCode()} for the first time. In order to extract
  * outgoing links and fields such as {@link #title}, the {@link #parse()} method
- * needs to be called. Parsing of the Page is handled by appropriate {@link Parser},
- * assigned to the Page at construction.
+ * needs to be called. Parsing of the Page is handled by appropriate
+ * {@link Parser}, assigned to the Page at construction.
  * 
  * @author Štefan Sabo
  * @version 1.0
@@ -129,7 +129,6 @@ public class Page {
 		if ((this.code == null) || (forceRetrieval)) {
 			this.code = Utility.requestCode(this);
 		}
-
 		return this.code;
 	}
 

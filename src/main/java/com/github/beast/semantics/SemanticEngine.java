@@ -1,11 +1,8 @@
 package com.github.beast.semantics;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
+
+import com.github.beast.util.Configuration;
 
 import edu.smu.tspell.wordnet.NounSynset;
 import edu.smu.tspell.wordnet.Synset;
@@ -13,102 +10,79 @@ import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.WordNetDatabase;
 
 /**
- * Semantics.
+ * Class representing engine, handling semantic queries to <a
+ * href="http://wordnet.princeton.edu/wordnet/">Wordnet</a> database. Currently
+ * the root of a given noun may be established, through
+ * {@link #getNounRoot(String)}, or all synonyms of a noun may be retrieved
+ * through {@link #getSynonyms(String)}.
  * 
  * @author Štefan Sabo
  * @version 1.0
+ * @see <a href="http://wordnet.princeton.edu/wordnet/">Wordnet</a>
  */
 public class SemanticEngine {
 
+	/** Wordnet database object. */
 	private static WordNetDatabase database;
 
+	/**
+	 * Creates a new Wordnet database and sets system property
+	 * <code>wordnet.database.dir</code>, pointing to Wordnet database in the
+	 * file system, according to settings given in {@link Configuration} class.
+	 */
 	public SemanticEngine() {
 
+		System.setProperty("wordnet.database.dir", Configuration.getInstance().getWordnetDir());
 		database = WordNetDatabase.getFileInstance();
 	}
 
-	public String getRootNoun(String token) {
+	/**
+	 * Retrieves a root form of a noun from the Wordnet database.
+	 * 
+	 * @param input arbitrary form of a noun
+	 * @return root form of the given noun, retrieved from Wordnet database. If
+	 *         no root form is retrieved for a given word, the word itself is
+	 *         returned.
+	 */
+	public String getRootNoun(final String input) {
 
-		String[] candidates = database.getBaseFormCandidates(token, SynsetType.NOUN);
+		String[] candidates = database.getBaseFormCandidates(input, SynsetType.NOUN);
 
-		if (candidates.length == 0)
-			return token;
-		else
+		if (candidates.length == 0) {
+			return input;
+		} else {
 			return candidates[0];
-	}
-
-	public void getAllSynsets(String path) throws Exception {
-
-		FileInputStream is = new FileInputStream(path);
-		BufferedReader br = new BufferedReader(new InputStreamReader(is));
-
-		FileWriter fw = new FileWriter("output.txt");
-		BufferedWriter bw = new BufferedWriter(fw);
-
-		String strline;
-
-		// NOUNS
-		while ((strline = br.readLine()) != null) {
-
-			int index = strline.indexOf(' ');
-			strline = strline.substring(0, index);
-
-			Synset[] synsets = database.getSynsets(strline, SynsetType.VERB);
-
-			if (synsets.length > 0) {
-				String line = strline + ";";
-
-				for (int i = 0; i < synsets.length; i++) {
-					String words[] = synsets[i].getWordForms();
-
-					for (int j = 0; j < words.length; j++) {
-						line = line + words[j];
-
-						if (j != (words.length - 1)) {
-							line = line + ",";
-						}
-					}
-
-					line = line + ";";
-				}
-
-				System.out.println(line);
-				bw.write(line + '\n');
-			}
 		}
-
-		br.close();
-		bw.close();
 	}
 
-	public ArrayList<String> getSynonyms(String token) {
+	/**
+	 * Retrieves all synonyms of a given noun from the Wordnet database.
+	 * 
+	 * @param input arbitrary noun
+	 * @return list of synonyms of the noun
+	 */
+	public ArrayList<String> getSynonyms(final String input) {
 
-		// get all synsets from database
-		Synset[] synsets = database.getSynsets(token, SynsetType.NOUN);
-		ArrayList<String> words = new ArrayList<String>();
+		NounSynset nounSynset;
+		ArrayList<String> synonyms = new ArrayList<String>();
+		Synset[] synsets = database.getSynsets(input, SynsetType.NOUN);
+		String[] tokens;
 
-		// add the given token only if not found - if found, other
-		// form may be used
 		if (synsets.length == 0) {
-			words.add(token);
-			return words;
+			synonyms.add(input);
+			return synonyms;
 		}
 
-		// extract tokens from all synsets at once
-		for (int i = 0; i < synsets.length; i++) {
+		for (Synset synset : synsets) {
+			nounSynset = (NounSynset) synset;
+			tokens = nounSynset.getWordForms();
 
-			NounSynset nSyns = (NounSynset) synsets[i];
-
-			String[] synWords = nSyns.getWordForms();
-
-			// append words together
-			for (int j = 0; j < synWords.length; j++) {
-
-				if (!words.contains(synWords[j]))
-					words.add(synWords[j]);
+			for (String token : tokens) {
+				if (!synonyms.contains(token)) {
+					synonyms.add(token);
+				}
 			}
 		}
-
-		return words;
+		return synonyms;
 	}
 }

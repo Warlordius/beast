@@ -38,7 +38,7 @@ public class ReutersPage extends ArticlePage {
 
 		parse((ReutersParser) getParser());
 	}
-	
+
 	/**
 	 * Parse the content of the page using supplied {@link ReutersParser}.
 	 * 
