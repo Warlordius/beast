@@ -2,12 +2,13 @@ package com.github.beast;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 import net.htmlparser.jericho.Config;
 import net.htmlparser.jericho.LoggerProvider;
 
 import com.github.beast.crawler.Crawler;
-import com.github.beast.index.BeastIndex;
+import com.github.beast.database.BeastIndex;
 import com.github.beast.semantics.SemanticEngine;
 import com.github.beast.tagger.Tagger;
 import com.github.beast.util.Configuration;
@@ -28,7 +29,7 @@ public class Beast {
 		
 		Config.LoggerProvider = LoggerProvider.DISABLED;					// neo4j logging setup
 
-		runHarvestToday(50, 100);
+		//runHarvestToday(50, 100);		
 	}
 
 	public static void log(final String string) {

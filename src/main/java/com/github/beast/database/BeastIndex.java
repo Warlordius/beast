@@ -1,4 +1,4 @@
-package com.github.beast.index;
+package com.github.beast.database;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -58,9 +58,16 @@ public class BeastIndex {
 	private static final String REL_KEYWORD = "relationship_keyword";
 	private static final String REL_RELEVANCE = "relationship_relevance";
 
-	private static GraphDatabaseService graphDb;
+	/** Graph database object. */
+	private static GraphDatabase graphDb;
+
+	/** Index of all keyword nodes. */
 	private static Index<Node> keywords;
+
+	/** Index of all nodes representing already indexed pages. */
 	private static Index<Node> pageIndex;
+
+	/** Index of all nodes representing pages. */
 	private static Index<Node> allNodeIndex;
 
 	/** Relationship type definitions. */
@@ -70,62 +77,37 @@ public class BeastIndex {
 	}
 
 	/**
-	 * Adds hook to ensure correct shutdown of database in case of unexpected
-	 * exit.
+	 * Adds a new keyword to the given {@link Page page}, with given relevance.
+	 * If the page already contains the keyword, keyword relevance is updated
+	 * only if value of new relevance is higher than original value. Otherwise
+	 * original value is kept.
 	 * 
-	 * @param graphDb graph database to add shutdown hook to
+	 * @param page
+	 * @param keyword
+	 * @param relevance
 	 */
-	private static void registerShutdownHook(final GraphDatabaseService graphDb) {
+	public void addKeyword(final Page page, final String keyword, final double relevance) {
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
+		Node node = allNodeIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
+		Node keywordNode = getKeywordNode(keyword);
+		Relationship newRel;
 
-				graphDb.shutdown();
-			}
-		});
-	}
-
-	// Add a keyword to a given page.
-	 public void addKeyword(Page page, String keyword, double quality) {
-
-		Transaction tx = graphDb.beginTx();
-		try {
-			Node node = allNodeIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
-			Node keywordNode = getKeywordNode(keyword);
-
-			// if keyword is new, create it
-			if (keywordNode == null) {
-				keywordNode = graphDb.createNode();
-				keywordNode.setProperty(KEYWORD_NAME, keyword);
-				keywords.add(keywordNode, KEYWORD_NAME, keyword);
-			}
-
-			// find out, if there already is a relationship between page and
-			// keyword
-			Iterator<Relationship> iter = node.getRelationships(Rel.KEYWORD).iterator();
-			Relationship rel = null;
-			while ((iter.hasNext()) && (rel == null)) {
-				Relationship tmp = iter.next();
-				if (tmp.getOtherNode(node).getProperty(KEYWORD_NAME).toString().equals(keyword)) {
-					rel = tmp;
-				}
-			}
-			// if not, create new relationship
-			if (rel == null) {
-				rel = keywordNode.createRelationshipTo(node, Rel.KEYWORD);
-				rel.setProperty(KEYWORD_RELEVANCE, quality);
-			}
-			// update old relationship if the new one has higher quality
-			else {
-				if ((rel.hasProperty(KEYWORD_RELEVANCE)) && (Double.parseDouble(rel.getProperty(KEYWORD_RELEVANCE).toString()) < quality)) {
-					rel.setProperty(KEYWORD_RELEVANCE, quality);
-				}
-			}
-			tx.success();
-		} finally {
-			tx.finish();
+		if (keywordNode == null) {
+			keywordNode = graphDb.createNode(KEYWORD_NAME, keyword);
+			keywords.add(keywordNode, KEYWORD_NAME, keyword);
 		}
+
+		for (Relationship relationship : node.getRelationships(Rel.KEYWORD)) {
+			if (relationship.getOtherNode(node).getProperty(KEYWORD_NAME).toString().equals(keyword)) {
+				if (!(relationship.hasProperty(KEYWORD_RELEVANCE))
+						|| (Double.parseDouble(relationship.getProperty(KEYWORD_RELEVANCE).toString()) < relevance)) {
+					relationship.setProperty(KEYWORD_RELEVANCE, relevance);
+				}
+				return;
+			}
+		}
+		newRel = keywordNode.createRelationshipTo(node, Rel.KEYWORD);
+		newRel.setProperty(KEYWORD_RELEVANCE, relevance);
 	}
 
 	// add a relation of mutual relevance for two p
@@ -271,7 +253,7 @@ public class BeastIndex {
 	// retrieve a random page from index
 	public Page getRandPage() {
 
-		int pageNum = numPages(pageIndex);
+		int pageNum = getNumberOfPages(pageIndex);
 		Random generator = new Random();
 		int choice = generator.nextInt(pageNum);
 		IndexHits<Node> result = pageIndex.query(PAGE_KEY, "*");
@@ -351,7 +333,6 @@ public class BeastIndex {
 			if (page.getPerex() != null)
 				newPage.setProperty(PAGE_PEREX, page.getPerex().toString());
 
-			// EXPERIMENTAL
 			if (page.getTimestamp() != null) {
 				double timemilis = page.getTimestamp().getTime();
 				newPage.setProperty(PAGE_TIME, timemilis);
@@ -405,142 +386,31 @@ public class BeastIndex {
 	 */
 	public void init(final String path) {
 
-		graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(path);
-		pageIndex = graphDb.index().forNodes("pages");
-		allNodeIndex = graphDb.index().forNodes("allnodes");
-		keywords = graphDb.index().forNodes("keywords");
-		registerShutdownHook(graphDb);
+		graphDb = new GraphDatabase(path);
+		pageIndex = graphDb.createIndex("pages");
+		allNodeIndex = graphDb.createIndex("allnodes");
+		keywords = graphDb.createIndex("keywords");
 		indexStartingPages();
 
 		System.out.println("index running");
-		// listKeywords(keywords);
-		// listNodes(pageIndex, "output.txt");
-
-		Transaction tx = graphDb.beginTx();
-		try {
-			tx.success();
-		} finally {
-			tx.finish();
-		}
-	}
-
-	/**
-	 * Lists all indexed nodes, representing currently indexed pages. Along with
-	 * the nodes, link structure and identified keywords are also displayed for
-	 * every indexed nodes.
-	 * 
-	 * @param nodes - index of nodes to be displayed
-	 */
-	public void listNodes(final Index<Node> nodes) {
-
-		int pageCount = 0;
-
-		System.out.println("<<<< NODES >>>>");
-
-		// get nodes from the index
-		IndexHits<Node> result = nodes.query(PAGE_KEY, "*");
-
-		// repeat for every result (node) from the given index
-		while (result.iterator().hasNext()) {
-
-			pageCount++;
-
-			Node oneResult = result.iterator().next();
-			System.out.println("Page " + pageCount + "\n");
-			System.out.println("URL: " + oneResult.getProperty(PAGE_KEY));
-			System.out.println("title: " + oneResult.getProperty(PAGE_TITLE));
-
-			System.out.println();
-			System.out.println("Links: ");
-
-			Iterator<Relationship> rel = oneResult.getRelationships().iterator();
-			int linkCount = 0;
-
-			while (rel.hasNext()) {
-
-				Relationship link = rel.next();
-				if (link.isType(Rel.LINK)) {
-					linkCount++;
-					Node other = link.getOtherNode(oneResult);
-
-					String otherKey;
-					String otherTitle;
-
-					if (other.hasProperty(PAGE_KEY))
-						otherKey = other.getProperty(PAGE_KEY).toString();
-					else
-						otherKey = " - no url -";
-
-					if (other.hasProperty(PAGE_TITLE))
-						otherTitle = ", " + other.getProperty(PAGE_TITLE).toString();
-					else
-						otherTitle = ", << no title >>";
-
-					System.out.println("     " + otherKey + otherTitle);
-				}
-			}
-
-			System.out.println();
-			System.out.println("Total links: " + linkCount);
-
-			System.out.println("--------------------------");
-		}
-	}
-
-	/**
-	 * Lists all indexed nodes, representing currently indexed pages. Along with
-	 * the nodes, link structure and identified keywords are also displayed for
-	 * every indexed nodes.
-	 * 
-	 * @param nodes - index of nodes to be listed.
-	 * @param path - string containing path to a file, where the output should
-	 *        be redirected.
-	 */
-	public void listNodes(Index<Node> nodes, String path) {
-
-		// if path is set, redirect output to given file
-		if (!path.isEmpty()) {
-
-			PrintStream output = System.out;
-
-			try {
-				PrintStream ps = new PrintStream(new FileOutputStream(path));
-				System.setOut(ps);
-				listNodes(nodes);
-				ps.close();
-
-			} catch (FileNotFoundException ex) {
-				System.out.println("File not found: " + path);
-				return;
-
-			} finally {
-				// redirect output back to original system stream
-				System.setOut(output);
-			}
-		}
-	}
-
-	public void listNodes(String path) {
-
-		listNodes(pageIndex, path);
 	}
 
 	// return the number of indexed pages including linked ones
 	public int numAllPages() {
 
-		return numPages(allNodeIndex);
+		return getNumberOfPages(allNodeIndex);
 	}
 
 	// return the number of indexed and processed pages
 	public int numIndexedPages() {
 
-		return numPages(pageIndex);
+		return getNumberOfPages(pageIndex);
 	}
 
 	// return the number of indexed keywords
 	public int numKeywords() {
 
-		return numPages(keywords);
+		return getNumberOfPages(keywords);
 	}
 
 	// retrieve a page object from a given node
@@ -705,13 +575,6 @@ public class BeastIndex {
 		}
 	}
 
-	// shutdown the running index database
-	public void shutdown() {
-
-		Beast.log("shutting down");
-		graphDb.shutdown();
-	}
-
 	// check, if the page already exists in the index
 	private boolean containsUrl(final URL url, Index<Node> index) {
 
@@ -751,54 +614,8 @@ public class BeastIndex {
 		}
 	}
 
-	/**
-	 * 
-	 * Lists current indexed keywords from the given index of keywords.
-	 * 
-	 * @param keywords - index of keywords to be displayed.
-	 */
-	@SuppressWarnings("unused")
-	private void listKeywords(Index<Node> keywords) {
-
-		System.out.println("<<<< KEYWORDS >>>>");
-
-		// get keywords from the index
-		IndexHits<Node> result = keywords.query(KEYWORD_NAME, "*");
-
-		// repeats for every result (keyword) from given index
-		while (result.iterator().hasNext()) {
-
-			int relCount = 0;
-			Node oneResult = result.iterator().next();
-			Date mostRecent = new Date(1000);
-			Iterator<Relationship> rel = oneResult.getRelationships().iterator();
-
-			// counts occurrences of the keyword
-			while (rel.hasNext()) {
-
-				relCount++;
-				Node otherNode = rel.next().getOtherNode(oneResult);
-
-				if (otherNode.hasProperty(PAGE_TIMESTAMP)) {
-
-					try {
-						DateFormat format = new SimpleDateFormat(DEFAULT_DATE_FORMAT, Locale.ENGLISH);
-						Date thisDate = format.parse(otherNode.getProperty(PAGE_LASTINDEX).toString());
-						if (thisDate.after(mostRecent))
-							mostRecent = thisDate;
-					}
-
-					catch (ParseException e) {
-						System.out.println("Wrong date format: " + e);
-					}
-				}
-			}
-			System.out.println(oneResult.getProperty(KEYWORD_NAME) + " ## pages: " + relCount + " ## most recent: " + mostRecent.toString());
-		}
-	}
-
 	// return the number of pages in a given index
-	private int numPages(Index<Node> index) {
+	private int getNumberOfPages(Index<Node> index) {
 
 		int numPages;
 		IndexHits<Node> result;

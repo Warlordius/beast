@@ -3,7 +3,7 @@ package com.github.beast.crawler;
 import java.util.*;
 
 import com.github.beast.Beast;
-import com.github.beast.index.BeastIndex;
+import com.github.beast.database.BeastIndex;
 import com.github.beast.page.Page;
 
 public class Crawler {
