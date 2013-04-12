@@ -4,11 +4,14 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 
 import com.github.beast.Beast;
+import com.github.beast.database.BeastIndex.Rel;
 
 /**
  * Graph database.
@@ -81,7 +84,7 @@ public class GraphDatabase {
 	protected Node createNode() {
 
 		Transaction tx = graphDb.beginTx();
-		Node node = null;
+		Node node;
 
 		try {
 			node = graphDb.createNode();
@@ -143,7 +146,7 @@ public class GraphDatabase {
 	 * Sets a property of a given node. Wraps
 	 * {@link org.neo4j.graphdb.PropertyContainer#setProperty(String, Object)
 	 * setProperty(String, Object)} method of database and executes it in
-	 * transaction. If the node already has set the property of given key, the
+	 * transaction. If the node already has a property with the given key, the
 	 * property is overwritten.
 	 * 
 	 * @param node the node to have its property set
@@ -160,5 +163,76 @@ public class GraphDatabase {
 		} finally {
 			tx.finish();
 		}
+	}
+
+	/**
+	 * Sets a property of a given relationship. Wraps
+	 * {@link org.neo4j.graphdb.PropertyContainer#setProperty(String, Object)
+	 * setProperty(String, Object)} method of database and executes it in
+	 * transaction. If the relationship already has a property with the given
+	 * key, the property is overwritten.
+	 * 
+	 * @param relationship the relationship to have its property set
+	 * @param key the key of property to be set
+	 * @param value the value of property to be set
+	 */
+	protected void setProperty(final Relationship relationship, final String key, final Object value) {
+
+		Transaction tx = graphDb.beginTx();
+
+		try {
+			relationship.setProperty(key, value);
+			tx.success();
+		} finally {
+			tx.finish();
+		}
+	}
+
+	/**
+	 * Creates a new relationship between two given nodes. Wraps
+	 * {@link org.neo4j.graphdb.Node#createRelationshipTo(Node, RelationshipType)
+	 * createRelationshipType} of database and executes it in transaction.
+	 * 
+	 * @param firstNode starting node
+	 * @param secondNode ending node
+	 * @param relationshipType type of the relationship to be created
+	 * @return created relationship
+	 */
+	protected Relationship addRelationship(final Node firstNode, final Node secondNode,
+			final RelationshipType relationshipType) {
+
+		Transaction tx = graphDb.beginTx();
+		Relationship rel;
+
+		try {
+			rel = firstNode.createRelationshipTo(secondNode, relationshipType);
+			tx.success();
+		} finally {
+			tx.finish();
+		}
+		return rel;
+	}
+
+	/**
+	 * Attempts to look up a relationship of a given type, between two
+	 * {@link Node nodes}. If such relationship exists, it is returned,
+	 * otherwise method returns <code>null</code>.
+	 * 
+	 * @param firstNode the first node sharing the relationship
+	 * @param secondNode the second node sharing the relationship
+	 * @param relationshipType required type of the relationship
+	 * @return relationship between two given nodes. If no such relationship
+	 *         exists, <code>null</code> is returned.
+	 */
+	//FIXME: may be multiple relationships
+	protected Relationship getRelationshipBetweenNodes(final Node firstNode, final Node secondNode,
+			final RelationshipType relationshipType) {
+
+		for (Relationship rel : firstNode.getRelationships(relationshipType)) {
+			if (rel.getOtherNode(firstNode).equals(secondNode)) {
+				return rel;
+			}
+		}
+		return null;
 	}
 }

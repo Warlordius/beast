@@ -1,10 +1,8 @@
 package com.github.beast.database;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
@@ -17,12 +15,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
@@ -71,7 +67,7 @@ public class BeastIndex {
 	private static Index<Node> allNodeIndex;
 
 	/** Relationship type definitions. */
-	private static enum Rel implements RelationshipType {
+	protected static enum Rel implements RelationshipType {
 
 		KEYWORD, LINK, RELATED
 	}
@@ -82,74 +78,80 @@ public class BeastIndex {
 	 * only if value of new relevance is higher than original value. Otherwise
 	 * original value is kept.
 	 * 
-	 * @param page
-	 * @param keyword
-	 * @param relevance
+	 * @param page the page to which the keyword is being added to
+	 * @param keyword the keyword being added
+	 * @param relevance the relevance of given keyword to the given page
 	 */
 	public void addKeyword(final Page page, final String keyword, final double relevance) {
 
 		Node node = allNodeIndex.get(PAGE_KEY, page.getUrl().toString()).getSingle();
 		Node keywordNode = getKeywordNode(keyword);
-		Relationship newRel;
+		Relationship relationship;
 
 		if (keywordNode == null) {
 			keywordNode = graphDb.createNode(KEYWORD_NAME, keyword);
 			keywords.add(keywordNode, KEYWORD_NAME, keyword);
 		}
 
-		for (Relationship relationship : node.getRelationships(Rel.KEYWORD)) {
-			if (relationship.getOtherNode(node).getProperty(KEYWORD_NAME).toString().equals(keyword)) {
-				if (!(relationship.hasProperty(KEYWORD_RELEVANCE))
-						|| (Double.parseDouble(relationship.getProperty(KEYWORD_RELEVANCE).toString()) < relevance)) {
-					relationship.setProperty(KEYWORD_RELEVANCE, relevance);
-				}
-				return;
-			}
+		relationship = graphDb.getRelationshipBetweenNodes(node, keywordNode, Rel.KEYWORD);
+
+		if (relationship == null) {
+			relationship = keywordNode.createRelationshipTo(node, Rel.KEYWORD);
+			graphDb.setProperty(relationship, KEYWORD_RELEVANCE, relevance);
+		} else if (!(relationship.hasProperty(KEYWORD_RELEVANCE))
+				|| (Double.parseDouble(relationship.getProperty(KEYWORD_RELEVANCE).toString()) < relevance)) {
+			relationship.setProperty(KEYWORD_RELEVANCE, relevance);
 		}
-		newRel = keywordNode.createRelationshipTo(node, Rel.KEYWORD);
-		newRel.setProperty(KEYWORD_RELEVANCE, relevance);
 	}
 
 	// add a relation of mutual relevance for two p
 	public Relationship addRelation(final Page first, final Page second, final String keyword, double relevance) {
 
-		Relationship newRel;
+		Relationship relationship;
 
-		Transaction tx = graphDb.beginTx();
-		try {
-			Node firstNode = pageIndex.get(PAGE_KEY, first.getUrl().toString()).getSingle();
-			Node secondNode = pageIndex.get(PAGE_KEY, second.getUrl().toString()).getSingle();
+		Node firstNode = pageIndex.get(PAGE_KEY, first.getUrl().toString()).getSingle();
+		Node secondNode = pageIndex.get(PAGE_KEY, second.getUrl().toString()).getSingle();
 
-			Iterator<Relationship> iter = firstNode.getRelationships(Rel.RELATED).iterator();
+		relationship = graphDb.getRelationshipBetweenNodes(firstNode, secondNode, Rel.RELATED);
+		
+		for (Relationship rel : firstNode.getRelationships(Rel.RELATED)) {
+			if (rel.getOtherNode(firstNode).equals(secondNode)) {
+				if (!(rel.hasProperty(REL_KEYWORD))
+						|| (Double.parseDouble(rel.getProperty(REL_RELEVANCE).toString()) < relevance)) {
 
-			while (iter.hasNext()) {
-				Relationship rel = iter.next();
-				// check if nodes have a common relation
-				if (rel.getOtherNode(firstNode).equals(secondNode)) {
-					// check if nodes have a common relation concerning given
-					// keyword
-					if ((rel.hasProperty(REL_KEYWORD)) && (rel.getProperty(REL_KEYWORD).equals(keyword))) {
-						// check if the relation has lower relevance than given
-						// relevance, if so, update relevance, otherwise end
-						// (relation is already established, return it)
-						if ((rel.hasProperty(REL_RELEVANCE)) && (Double.parseDouble(rel.getProperty(REL_RELEVANCE).toString()) < relevance)) {
-							rel.setProperty(REL_RELEVANCE, relevance);
-						}
-						tx.success();
-						return rel;
+				}
+				return rel;
+			}
+		}
+
+		Iterator<Relationship> iter = firstNode.getRelationships(Rel.RELATED).iterator();
+
+		while (iter.hasNext()) {
+			Relationship rel = iter.next();
+			// check if nodes have a common relation
+			if (rel.getOtherNode(firstNode).equals(secondNode)) {
+				// check if nodes have a common relation concerning given
+				// keyword
+				if ((rel.hasProperty(REL_KEYWORD)) && (rel.getProperty(REL_KEYWORD).equals(keyword))) {
+					// check if the relation has lower relevance than given
+					// relevance, if so, update relevance, otherwise end
+					// (relation is already established, return it)
+					if ((rel.hasProperty(REL_RELEVANCE))
+							&& (Double.parseDouble(rel.getProperty(REL_RELEVANCE).toString()) < relevance)) {
+						rel.setProperty(REL_RELEVANCE, relevance);
 					}
+					tx.success();
+					return rel;
 				}
 			}
-
-			// relation was not found
-			newRel = firstNode.createRelationshipTo(secondNode, Rel.RELATED);
-			newRel.setProperty(REL_KEYWORD, keyword);
-			newRel.setProperty(REL_RELEVANCE, relevance);
-			tx.success();
-			return newRel;
-		} finally {
-			tx.finish();
 		}
+
+		// relation was not found
+		newRel = firstNode.createRelationshipTo(secondNode, Rel.RELATED);
+		newRel.setProperty(REL_KEYWORD, keyword);
+		newRel.setProperty(REL_RELEVANCE, relevance);
+
+		return newRel;
 
 	}
 
@@ -189,7 +191,8 @@ public class BeastIndex {
 
 			Relationship rel = iter.next();
 
-			if (rel.getOtherNode(node).hasProperty(KEYWORD_NAME) && (rel.getOtherNode(node).getProperty(KEYWORD_NAME).toString().equals(keyword))) {
+			if (rel.getOtherNode(node).hasProperty(KEYWORD_NAME)
+					&& (rel.getOtherNode(node).getProperty(KEYWORD_NAME).toString().equals(keyword))) {
 				double relevance = Double.parseDouble(rel.getProperty(KEYWORD_RELEVANCE).toString());
 				return relevance;
 			}
