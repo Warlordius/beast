@@ -18,7 +18,6 @@ import java.util.Random;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
@@ -90,69 +89,45 @@ public class BeastIndex {
 
 		if (keywordNode == null) {
 			keywordNode = graphDb.createNode(KEYWORD_NAME, keyword);
-			keywords.add(keywordNode, KEYWORD_NAME, keyword);
+			graphDb.addToIndex(keywords, keywordNode, KEYWORD_NAME, keyword);
 		}
 
-		relationship = graphDb.getRelationshipBetweenNodes(node, keywordNode, Rel.KEYWORD);
+		relationship = graphDb.getSingleRelationship(node, keywordNode, Rel.KEYWORD);
 
 		if (relationship == null) {
-			relationship = keywordNode.createRelationshipTo(node, Rel.KEYWORD);
+			relationship = graphDb.addRelationship(keywordNode,  node,  Rel.KEYWORD);
 			graphDb.setProperty(relationship, KEYWORD_RELEVANCE, relevance);
 		} else if (!(relationship.hasProperty(KEYWORD_RELEVANCE))
 				|| (Double.parseDouble(relationship.getProperty(KEYWORD_RELEVANCE).toString()) < relevance)) {
-			relationship.setProperty(KEYWORD_RELEVANCE, relevance);
+			graphDb.setProperty(relationship, KEYWORD_RELEVANCE, relevance);
 		}
 	}
 
 	// add a relation of mutual relevance for two p
 	public Relationship addRelation(final Page first, final Page second, final String keyword, double relevance) {
 
-		Relationship relationship;
+		// TODO: create method in graphdatabase to set properties at relationship creation
+		ArrayList<Relationship> relationships;
+		Relationship newRelationship;
 
 		Node firstNode = pageIndex.get(PAGE_KEY, first.getUrl().toString()).getSingle();
 		Node secondNode = pageIndex.get(PAGE_KEY, second.getUrl().toString()).getSingle();
 
-		relationship = graphDb.getRelationshipBetweenNodes(firstNode, secondNode, Rel.RELATED);
+		relationships = graphDb.getRelationship(firstNode, secondNode, Rel.RELATED);
 		
-		for (Relationship rel : firstNode.getRelationships(Rel.RELATED)) {
-			if (rel.getOtherNode(firstNode).equals(secondNode)) {
-				if (!(rel.hasProperty(REL_KEYWORD))
-						|| (Double.parseDouble(rel.getProperty(REL_RELEVANCE).toString()) < relevance)) {
-
+		for (Relationship rel : relationships) {
+			if (rel.hasProperty(REL_KEYWORD)) {
+				if ((Double.parseDouble(rel.getProperty(REL_RELEVANCE).toString()) < relevance)) {
+					graphDb.setProperty(rel, REL_RELEVANCE, relevance);
 				}
 				return rel;
 			}
-		}
+		}		
 
-		Iterator<Relationship> iter = firstNode.getRelationships(Rel.RELATED).iterator();
-
-		while (iter.hasNext()) {
-			Relationship rel = iter.next();
-			// check if nodes have a common relation
-			if (rel.getOtherNode(firstNode).equals(secondNode)) {
-				// check if nodes have a common relation concerning given
-				// keyword
-				if ((rel.hasProperty(REL_KEYWORD)) && (rel.getProperty(REL_KEYWORD).equals(keyword))) {
-					// check if the relation has lower relevance than given
-					// relevance, if so, update relevance, otherwise end
-					// (relation is already established, return it)
-					if ((rel.hasProperty(REL_RELEVANCE))
-							&& (Double.parseDouble(rel.getProperty(REL_RELEVANCE).toString()) < relevance)) {
-						rel.setProperty(REL_RELEVANCE, relevance);
-					}
-					tx.success();
-					return rel;
-				}
-			}
-		}
-
-		// relation was not found
-		newRel = firstNode.createRelationshipTo(secondNode, Rel.RELATED);
-		newRel.setProperty(REL_KEYWORD, keyword);
-		newRel.setProperty(REL_RELEVANCE, relevance);
-
-		return newRel;
-
+		newRelationship = graphDb.addRelationship(firstNode, secondNode, Rel.RELATED);
+		graphDb.setProperty(newRelationship, REL_KEYWORD, keyword);
+		graphDb.setProperty(newRelationship, REL_RELEVANCE, relevance);
+		return newRelationship;		
 	}
 
 	/**
@@ -302,73 +277,66 @@ public class BeastIndex {
 			nodeIsNew = false;
 		}
 
-		Transaction tx = graphDb.beginTx();
-		try {
-			if (nodeIsNew) {
-				newPage = graphDb.createNode();
-			}
-
-			// try to process page, if not yet processed
-			try {
-				page.process();
-			} catch (NullPointerException e) {
-				System.err.println("Failed to process page: " + page.getUrl());
-				return null;
-			}
-
-			System.out.println("index - " + page.getUrl());
-			page.setLastIndexed(new Date());
-			newPage.setProperty(PAGE_KEY, page.getUrl().toString());
-			newPage.setProperty(PAGE_INDEXED, true);
-
-			if (page.getArchiveFile() != null)
-				newPage.setProperty(PAGE_PATH, page.getArchiveFile().getAbsolutePath());
-			if (page.getTitle() != null)
-				newPage.setProperty(PAGE_TITLE, page.getTitle());
-			if (page.getLocation() != null)
-				newPage.setProperty(PAGE_LOCATION, page.getLocation());
-			if (page.getTimestamp() != null)
-				newPage.setProperty(PAGE_TIMESTAMP, page.getTimestamp().toString());
-			if (page.getLastIndexed() != null)
-				newPage.setProperty(PAGE_LASTINDEX, page.getLastIndexed().toString());
-			if (page.getText() != null)
-				newPage.setProperty(PAGE_TEXT, page.getText().toString());
-			if (page.getPerex() != null)
-				newPage.setProperty(PAGE_PEREX, page.getPerex().toString());
-
-			if (page.getTimestamp() != null) {
-				double timemilis = page.getTimestamp().getTime();
-				newPage.setProperty(PAGE_TIME, timemilis);
-			}
-
-			// add outgoing links within the page as nonindexed nodes
-			for (int i = 0; i < page.getLinks().size(); i++) {
-
-				Node linkedPage;
-
-				if (containsUrl(page.getLinks().get(i).getUrl(), allNodeIndex)) {
-					linkedPage = allNodeIndex.get(PAGE_KEY, page.getLinks().get(i).getUrl()).getSingle();
-				} else {
-					linkedPage = graphDb.createNode();
-					linkedPage.setProperty(PAGE_KEY, page.getLinks().get(i).getUrl().toString());
-					linkedPage.setProperty(PAGE_INDEXED, false);
-					allNodeIndex.add(linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl());
-				}
-				Relationship relation = newPage.createRelationshipTo(linkedPage, Rel.LINK);
-				relation.setProperty(ANCHOR_TEXT, page.getLinks().get(i).getAnchorText());
-			}
-
-			if ((nodeIsNew) && (!containsUrl(page.getUrl(), allNodeIndex)))
-				allNodeIndex.add(newPage, PAGE_KEY, page.getUrl().toString());
-
-			pageIndex.add(newPage, PAGE_KEY, page.getUrl().toString());
-
-			tx.success();
-
-			return newPage;
-		} finally {
-			tx.finish();
+		if (nodeIsNew) {
+			newPage = graphDb.createNode();
 		}
+
+		// try to process page, if not yet processed
+		try {
+			page.process();
+		} catch (NullPointerException e) {
+			System.err.println("Failed to process page: " + page.getUrl());
+			return null;
+		}
+
+		System.out.println("index - " + page.getUrl());
+		page.setLastIndexed(new Date());
+		graphDb.setProperty(newPage, PAGE_KEY, page.getUrl().toString());
+		graphDb.setProperty(newPage, PAGE_INDEXED, true);
+
+		if (page.getArchiveFile() != null)
+			graphDb.setProperty(newPage, PAGE_PATH, page.getArchiveFile().getAbsolutePath());
+		if (page.getTitle() != null)
+			graphDb.setProperty(newPage, PAGE_TITLE, page.getTitle());
+		if (page.getLocation() != null)
+			graphDb.setProperty(newPage, PAGE_LOCATION, page.getLocation());
+		if (page.getTimestamp() != null)
+			graphDb.setProperty(newPage, PAGE_TIMESTAMP, page.getTimestamp().toString());
+		if (page.getLastIndexed() != null)
+			graphDb.setProperty(newPage, PAGE_LASTINDEX, page.getLastIndexed().toString());
+		if (page.getText() != null)
+			graphDb.setProperty(newPage, PAGE_TEXT, page.getText().toString());
+		if (page.getPerex() != null)
+			graphDb.setProperty(newPage, PAGE_PEREX, page.getPerex().toString());
+
+		if (page.getTimestamp() != null) {
+			double timemilis = page.getTimestamp().getTime();
+			graphDb.setProperty(newPage, PAGE_TIME, timemilis);
+		}
+
+		// add outgoing links within the page as nonindexed nodes
+		for (int i = 0; i < page.getLinks().size(); i++) {
+
+			Node linkedPage;
+
+			if (containsUrl(page.getLinks().get(i).getUrl(), allNodeIndex)) {
+				linkedPage = allNodeIndex.get(PAGE_KEY, page.getLinks().get(i).getUrl()).getSingle();
+			} else {
+				linkedPage = graphDb.createNode();
+				graphDb.setProperty(linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl().toString());
+				graphDb.setProperty(linkedPage, PAGE_INDEXED, false);
+				graphDb.addToIndex(allNodeIndex, linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl());
+			}
+			Relationship relation = graphDb.addRelationship(newPage,  linkedPage,  Rel.LINK);
+			graphDb.setProperty(relation, ANCHOR_TEXT, page.getLinks().get(i).getAnchorText());
+		}
+
+		if ((nodeIsNew) && (!containsUrl(page.getUrl(), allNodeIndex)))
+			graphDb.addToIndex(allNodeIndex, newPage, PAGE_KEY, page.getUrl().toString());
+
+		graphDb.addToIndex(pageIndex, newPage, PAGE_KEY, page.getUrl().toString());
+
+		return newPage;
 	}
 
 	/**
@@ -504,78 +472,69 @@ public class BeastIndex {
 			resultIndexed.close();
 		}
 
-		Transaction tx = graphDb.beginTx();
+		System.out.println("update - " + page.getUrl());
+		page.setLastIndexed(new Date());
+		graphDb.setProperty(newPage, PAGE_KEY, page.getUrl().toString());
+		graphDb.setProperty(newPage, PAGE_INDEXED, true);
 
+		// try to process page, if not yet processed
 		try {
-			System.out.println("update - " + page.getUrl());
-			page.setLastIndexed(new Date());
-			newPage.setProperty(PAGE_KEY, page.getUrl().toString());
-			newPage.setProperty(PAGE_INDEXED, true);
-
-			// try to process page, if not yet processed
-			try {
-				page.process(Page.REPROCESS);
-			} catch (NullPointerException e) {
-				System.err.println("Failed to process page: " + page.getUrl());
-				return null;
-			}
-
-			if (page.getText() != null) {
-				newPage.setProperty(PAGE_TEXT, page.getText().toString());
-			}
-			if (page.getPerex() != null) {
-				newPage.setProperty(PAGE_PEREX, page.getPerex().toString());
-			}
-			if (page.getArchiveFile() != null) {
-				newPage.setProperty(PAGE_PATH, page.getArchiveFile().getAbsolutePath());
-			}
-			if (page.getTitle() != null) {
-				newPage.setProperty(PAGE_TITLE, page.getTitle());
-			}
-			if (page.getLocation() != null) {
-				newPage.setProperty(PAGE_LOCATION, page.getLocation());
-			}
-			if (page.getTimestamp() != null) {
-				newPage.setProperty(PAGE_TIMESTAMP, page.getTimestamp().toString());
-			}
-			if (page.getLastIndexed() != null) {
-				newPage.setProperty(PAGE_LASTINDEX, page.getLastIndexed().toString());
-			}
-
-			// remove all old outgoing links first
-			Iterator<Relationship> rel = newPage.getRelationships(Rel.LINK).iterator();
-
-			while (rel.hasNext()) {
-
-				Relationship link = rel.next();
-
-				if (link.getStartNode().equals(newPage)) {
-					link.delete();
-				}
-			}
-
-			// update links
-			for (int i = 0; i < page.getLinks().size(); i++) {
-
-				Node linkedPage;
-				if (containsUrl(page.getLinks().get(i).getUrl(), allNodeIndex)) {
-					linkedPage = allNodeIndex.get(PAGE_KEY, page.getLinks().get(i).getUrl()).getSingle();
-				} else {
-					linkedPage = graphDb.createNode();
-					linkedPage.setProperty(PAGE_KEY, page.getLinks().get(i).getUrl().toString());
-					linkedPage.setProperty(PAGE_INDEXED, false);
-				}
-
-				Relationship relation = newPage.createRelationshipTo(linkedPage, Rel.LINK);
-				relation.setProperty(ANCHOR_TEXT, page.getLinks().get(i).getAnchorText());
-				allNodeIndex.add(linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl());
-			}
-
-			tx.success();
-			return newPage;
-		} finally {
-			tx.finish();
+			page.process(Page.REPROCESS);
+		} catch (NullPointerException e) {
+			System.err.println("Failed to process page: " + page.getUrl());
+			return null;
 		}
+
+		if (page.getText() != null) {
+			graphDb.setProperty(newPage, PAGE_TEXT, page.getText().toString());
+		}
+		if (page.getPerex() != null) {
+			graphDb.setProperty(newPage, PAGE_PEREX, page.getPerex().toString());
+		}
+		if (page.getArchiveFile() != null) {
+			graphDb.setProperty(newPage, PAGE_PATH, page.getArchiveFile().getAbsolutePath());
+		}
+		if (page.getTitle() != null) {
+			graphDb.setProperty(newPage, PAGE_TITLE, page.getTitle());
+		}
+		if (page.getLocation() != null) {
+			graphDb.setProperty(newPage, PAGE_LOCATION, page.getLocation());
+			}
+		if (page.getTimestamp() != null) {
+			graphDb.setProperty(newPage, PAGE_TIMESTAMP, page.getTimestamp().toString());
+		}
+		if (page.getLastIndexed() != null) {
+			graphDb.setProperty(newPage, PAGE_LASTINDEX, page.getLastIndexed().toString());
+		}
+
+		// remove all old outgoing links first
+		Iterator<Relationship> rel = newPage.getRelationships(Rel.LINK).iterator();
+
+		while (rel.hasNext()) {
+			Relationship link = rel.next();
+			if (link.getStartNode().equals(newPage)) {
+				graphDb.deleteRelationship(link);
+			}
+		}
+
+		// update links
+		for (int i = 0; i < page.getLinks().size(); i++) {
+
+			Node linkedPage;
+			
+			if (containsUrl(page.getLinks().get(i).getUrl(), allNodeIndex)) {
+				linkedPage = allNodeIndex.get(PAGE_KEY, page.getLinks().get(i).getUrl()).getSingle();
+			} else {
+				linkedPage = graphDb.createNode();
+				graphDb.setProperty(linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl().toString());
+				graphDb.setProperty(linkedPage, PAGE_INDEXED, false);
+			}
+
+			Relationship relation = graphDb.addRelationship(newPage,  linkedPage,  Rel.LINK);
+			graphDb.setProperty(relation, ANCHOR_TEXT, page.getLinks().get(i).getAnchorText());
+			graphDb.addToIndex(allNodeIndex, linkedPage, PAGE_KEY, page.getLinks().get(i).getUrl());
+		}
+		return newPage;
 	}
 
 	// check, if the page already exists in the index
@@ -630,5 +589,10 @@ public class BeastIndex {
 		numPages = result.size();
 		result.close();
 		return numPages;
+	}	
+	
+	public void shutdown() {
+		
+		graphDb.shutdown();
 	}
 }

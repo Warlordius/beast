@@ -5,6 +5,7 @@ import java.util.*;
 import com.github.beast.Beast;
 import com.github.beast.database.BeastIndex;
 import com.github.beast.page.Page;
+import com.github.beast.util.Configuration;
 
 public class Crawler {
 
@@ -18,12 +19,15 @@ public class Crawler {
     private final boolean ANNOUNCE = true;
     private final int BEE_NUMBER = 50;
     // private final double DESIRE_REDUCTION = 0.000;
-    private final long DELAY = 5000;
+    private final int DELAY = 5000;
     private final int ITERATIONS = 10000;
 
+    private int requestDelay;
+    
     public Crawler(BeastIndex index) {
 
 	this.index = index;
+	this.requestDelay = Configuration.getInstance().getRequestDelay();
     }
 
 //    public int beesAtSource(Page page) {
@@ -66,7 +70,7 @@ public class Crawler {
 	    }
 	    
 	    try {
-		Thread.sleep(DELAY);
+		Thread.sleep(requestDelay);
 	    } catch (InterruptedException e) {
 		System.out.println("Unexpected interruption of crawler system");
 	    }

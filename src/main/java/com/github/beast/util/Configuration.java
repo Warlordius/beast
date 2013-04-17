@@ -31,8 +31,10 @@ public final class Configuration {
 	private static final String DEFAULT_WORDNET_LOCATION = "C:\\Program Files (x86)\\Wordnet\\2.1\\dict\\";
 	private static final String DEFAULT_BEE_MESSAGES = "false";
 	private static final String DEFAULT_REFRESH_DELAY = "1800000";
+	private static final String DEFAULT_REQUEST_DELAY = "5000";
 	private static final String DEFAULT_PROPERTIES_FILE = ".properties";
 	private static final String DEFAULT_TAGGER_PATH = "tagger\\english-left3words-distsim.tagger";
+	
 
 	// property names
 	private static final String LOGGING = "use_logging";
@@ -44,6 +46,7 @@ public final class Configuration {
 	private static final String LOG_FILE = "log_file";
 	private static final String BEE_MESSAGES = "bee_messages";
 	private static final String REFRESH_DELAY = "bee_refresh_delay";
+	private static final String REQUEST_DELAY = "bee_request_delay";
 	private static final String PAGE_ARCHIVE_DIR = "page_archive_dir";
 	private static final String TAGGER_PATH = "tagger_path";
 
@@ -53,6 +56,7 @@ public final class Configuration {
 	private boolean semantics;
 	private boolean beeMessages;
 	private int refreshDelay;
+	private int requestDelay;
 	private String databaseDir;
 	private String logFile;
 	private String resourceDir;
@@ -214,6 +218,10 @@ public final class Configuration {
 		return semantics;
 	}
 
+	public int getRequestDelay() {
+		
+		return requestDelay;
+	}
 	/**
 	 * Reads the specified config file and sets the values configuration
 	 * settings. If no value is found for a given setting, default value is
@@ -238,7 +246,8 @@ public final class Configuration {
 		pageArchive = Boolean.parseBoolean(properties.getProperty(PAGE_ARCHIVE, DEFAULT_PAGE_ARCHIVE));
 
 		refreshDelay = Integer.parseInt(properties.getProperty(REFRESH_DELAY, DEFAULT_REFRESH_DELAY));
-
+		requestDelay = Integer.parseInt(properties.getProperty(REQUEST_DELAY, DEFAULT_REQUEST_DELAY));
+		
 		resourceDir = properties.getProperty(MAIN_DIR, DEFAULT_MAIN_DIR);
 		logFile = properties.getProperty(LOG_FILE, DEFAULT_LOG_FILE);
 		databaseDir = properties.getProperty(DATABASE_DIR, DEFAULT_DATABASE_DIR);

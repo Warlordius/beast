@@ -1,5 +1,6 @@
 package com.github.beast.database;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -11,7 +12,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 
 import com.github.beast.Beast;
-import com.github.beast.database.BeastIndex.Rel;
 
 /**
  * Graph database.
@@ -214,7 +214,7 @@ public class GraphDatabase {
 	}
 
 	/**
-	 * Attempts to look up a relationship of a given type, between two
+	 * Attempts to look up a {@link Relationship} of a given type, between two
 	 * {@link Node nodes}. If such relationship exists, it is returned,
 	 * otherwise method returns <code>null</code>.
 	 * 
@@ -223,9 +223,9 @@ public class GraphDatabase {
 	 * @param relationshipType required type of the relationship
 	 * @return relationship between two given nodes. If no such relationship
 	 *         exists, <code>null</code> is returned.
+	 * @see #getRelationship(Node, Node, RelationshipType)
 	 */
-	//FIXME: may be multiple relationships
-	protected Relationship getRelationshipBetweenNodes(final Node firstNode, final Node secondNode,
+	protected Relationship getSingleRelationship(final Node firstNode, final Node secondNode,
 			final RelationshipType relationshipType) {
 
 		for (Relationship rel : firstNode.getRelationships(relationshipType)) {
@@ -234,5 +234,54 @@ public class GraphDatabase {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Attempts to look up all {@link Relationship relationships} of a given
+	 * type, between two {@link Node nodes}. If no relationships of given type
+	 * exist between the two nodes, empty list is returned.
+	 * 
+	 * @param firstNode the first node sharing the relationships
+	 * @param secondNode the second node sharing the relationships
+	 * @param relationshipType required type of relationships
+	 * @return list of relationships between two given nodes. If no such
+	 *         relationship exists, empty list is returned.
+	 * @see #getSingleRelationship(Node, Node, RelationshipType)
+	 */
+	protected ArrayList<Relationship> getRelationship(final Node firstNode, final Node secondNode,
+			final RelationshipType relationshipType) {
+
+		ArrayList<Relationship> relations = new ArrayList<Relationship>();
+
+		for (Relationship rel : firstNode.getRelationships(relationshipType)) {
+			if (rel.getOtherNode(firstNode).equals(secondNode)) {
+				relations.add(rel);
+			}
+		}
+		return relations;
+	}
+	
+	protected void addToIndex(Index<Node> index, Node node, String key, Object value) {
+		
+		Transaction tx = graphDb.beginTx();
+		
+		try {
+			index.add(node, key, value);
+			tx.success();
+		} finally {
+			tx.finish();
+		}
+	}
+	
+	protected void deleteRelationship(Relationship relationship) {
+		
+		Transaction tx = graphDb.beginTx();
+		
+		try {
+			relationship.delete();
+			tx.success();
+		} finally {
+			tx.finish();
+		}
 	}
 }
