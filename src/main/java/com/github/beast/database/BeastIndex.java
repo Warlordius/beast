@@ -130,28 +130,6 @@ public class BeastIndex {
 		return newRelationship;		
 	}
 
-	/**
-	 * Exports Neo4j graph representation of this index into an XML file.
-	 * 
-	 * @param outputPath - path to file, where Neo4j graph will be exported as
-	 *        XML.
-	 */
-	public void exportToXML(String graphPath, String outputPath) {
-
-		Graph graph = new Neo4jGraph(graphPath);
-
-		try {
-			FileOutputStream fs = new FileOutputStream(outputPath);
-			GraphMLWriter.outputGraph(graph, fs);
-			System.out.println("Graph exported into file : \"" + outputPath + "\"");
-			fs.close();
-
-		} catch (IOException e) {
-			System.out.println("IO Error: " + e);
-			return;
-		}
-	}
-
 	// get a random keyword of a given page
 	public double getKeywordRelevance(String keyword, Page page) {
 
@@ -570,7 +548,12 @@ public class BeastIndex {
 		for (Link link : links) {
 			newPage = new ReutersPage(link.getUrl());
 			if (!containsUrl(newPage.getUrl(), allNodeIndex)) {
-				newPage.process();
+				try {
+					newPage.process();
+				} catch (NullPointerException e) {
+					System.err.println("Failed to process page: " + newPage.getUrl());
+					continue;
+				}
 				indexPage(newPage);
 			}
 		}
@@ -590,6 +573,28 @@ public class BeastIndex {
 		result.close();
 		return numPages;
 	}	
+	
+	/**
+	 * Exports Neo4j graph representation of this index into an XML file.
+	 * 
+	 * @param outputPath - path to file, where Neo4j graph will be exported as
+	 *        XML.
+	 */
+	public void exportToXML(final String graphPath, final String outputPath) {
+
+		Graph graph = new Neo4jGraph(graphPath);
+
+		try {
+			FileOutputStream fs = new FileOutputStream(outputPath);
+			GraphMLWriter.outputGraph(graph, fs);
+			System.out.println("Graph exported into file : \"" + outputPath + "\"");
+			fs.close();
+
+		} catch (IOException e) {
+			System.out.println("IO Error: " + e);
+			return;
+		}
+	}
 	
 	public void shutdown() {
 		

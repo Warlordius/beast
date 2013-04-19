@@ -29,7 +29,7 @@ public class Beast {
 		
 		Config.LoggerProvider = LoggerProvider.DISABLED;					// neo4j logging setup
 
-		runHarvestToday(50, 30);		
+		runHarvestToday(50, 500);		
 	}
 
 	public static void log(final String string) {

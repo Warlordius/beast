@@ -1,5 +1,7 @@
 package com.github.beast.database;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -12,6 +14,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 
 import com.github.beast.Beast;
+import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.impls.neo4j.Neo4jGraph;
+import com.tinkerpop.blueprints.util.io.graphml.GraphMLWriter;
 
 /**
  * Graph database.
@@ -58,7 +63,6 @@ public class GraphDatabase {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-
 				graphDb.shutdown();
 			}
 		});
@@ -191,7 +195,7 @@ public class GraphDatabase {
 	/**
 	 * Creates a new relationship between two given nodes. Wraps
 	 * {@link org.neo4j.graphdb.Node#createRelationshipTo(Node, RelationshipType)
-	 * createRelationshipType} of database and executes it in transaction.
+	 * createRelationshipType()} of database and executes it in transaction.
 	 * 
 	 * @param firstNode starting node
 	 * @param secondNode ending node
@@ -261,7 +265,17 @@ public class GraphDatabase {
 		return relations;
 	}
 	
-	protected void addToIndex(Index<Node> index, Node node, String key, Object value) {
+	/**
+	 * Adds a new {@link Node node} into given {@link Index index}. Wraps
+	 * {@link org.neo4j.graphdb.Index#add(Node, String, Object)
+	 * add()} method of index and executes it in transaction.
+	 * 
+	 * @param index the index into which the node will be added
+	 * @param node the node to add
+	 * @param key the label of key parameter, unique for the node, under which the node will be recognized
+	 * @param value the value of key parameter
+	 */
+	protected void addToIndex(final Index<Node> index, final Node node, final String key, final Object value) {
 		
 		Transaction tx = graphDb.beginTx();
 		
@@ -273,7 +287,14 @@ public class GraphDatabase {
 		}
 	}
 	
-	protected void deleteRelationship(Relationship relationship) {
+	/**
+	 * Deletes a relationship between two {@link Node nodes}. The nodes are not removed in the process. Wraps
+	 * {@link org.neo4j.graphdb.Relationship#delete()
+	 * delete()} method of a relationship class and executes it in transaction.
+	 * 
+	 * @param relationship the relationship to be deleted
+	 */	
+	protected void deleteRelationship(final Relationship relationship) {
 		
 		Transaction tx = graphDb.beginTx();
 		
@@ -283,5 +304,5 @@ public class GraphDatabase {
 		} finally {
 			tx.finish();
 		}
-	}
+	}	
 }

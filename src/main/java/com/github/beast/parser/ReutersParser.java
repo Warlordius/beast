@@ -196,7 +196,7 @@ public final class ReutersParser extends Parser {
 			pageText = new StringBuffer(extractor.toString());
 		} catch (NullPointerException e) {
 			System.err.println("No article text in page body: " + page.getUrl());
-			return null;
+			throw new NullPointerException();
 		}
 		return pageText;
 	}

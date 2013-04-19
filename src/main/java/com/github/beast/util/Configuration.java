@@ -157,7 +157,6 @@ public final class Configuration {
 	}
 
 	/**
-	 * 
 	 * @return delay between refreshing a page, in milliseconds
 	 */
 	public int getRefreshDelay() {
@@ -165,6 +164,14 @@ public final class Configuration {
 		return refreshDelay;
 	}
 
+	/**
+	 * @return delay after HTTP request, in milliseconds
+	 */
+	public int getRequestDelay() {
+		
+		return requestDelay;
+	}
+	
 	/**
 	 * @return path to the tagger dictionary
 	 */
@@ -218,10 +225,6 @@ public final class Configuration {
 		return semantics;
 	}
 
-	public int getRequestDelay() {
-		
-		return requestDelay;
-	}
 	/**
 	 * Reads the specified config file and sets the values configuration
 	 * settings. If no value is found for a given setting, default value is
